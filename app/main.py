@@ -12,9 +12,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.1.9"
+VERSION = "0.2.0"
 
-client = docker.from_env()
+client     = docker.from_env()
+api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
 
 SETTINGS_FILE = "/data/settings.json"
 
@@ -72,7 +73,6 @@ def get_image_str(c) -> str:
         pass
     return ""
 
-# ── helpers ───────────────────────────────────────────────────────────────────
 def is_pullable(image_str: str) -> bool:
     if not image_str:
         return False
@@ -82,47 +82,59 @@ def is_pullable(image_str: str) -> bool:
         return False
     return True
 
+# ── digest-only check (no pull) ───────────────────────────────────────────────
 def pull_check(name: str, image_str: str) -> tuple[str, str]:
+    """Compare remote digest via registry API — never pulls the image down."""
     if not is_pullable(image_str):
         reason = "No pullable tag (local or digest-only image)"
         log.info("Check %s → skipped (%s)", name, reason)
         return "error", reason
 
+    # get local digest
     try:
         local_img = client.images.get(image_str)
-        local_digest = (local_img.attrs.get("RepoDigests") or [""])[0]
+        local_digests = local_img.attrs.get("RepoDigests") or []
+        # RepoDigests entries look like  repo@sha256:abc...
+        local_digest = local_digests[0].split("@")[-1] if local_digests else ""
     except docker.errors.ImageNotFound:
-        return "error", "Local image not found"
+        # image not pulled locally yet → definitely needs a pull = update available
+        log.info("Check %s → update_available (image not local)", name)
+        return "update_available", ""
     except Exception as e:
         return "error", f"Local image lookup failed: {e}"
 
+    # get remote digest without downloading the image
     try:
-        log.info("Pulling %s for update check…", image_str)
-        remote_img = client.images.pull(image_str)
-        remote_digest = (remote_img.attrs.get("RepoDigests") or [""])[0]
+        log.info("Checking remote digest for %s…", image_str)
+        dist = api_client.inspect_distribution(image_str)
+        remote_digest = (dist.get("Descriptor") or {}).get("digest", "")
     except docker.errors.APIError as e:
         reason = str(e)
         if "unauthorized" in reason.lower() or "authentication" in reason.lower():
             reason = "Registry auth required"
         elif "not found" in reason.lower() or "manifest" in reason.lower():
             reason = "Image not found in registry"
-        elif "timeout" in reason.lower() or "timed out" in reason.lower():
-            reason = "Registry pull timed out"
+        elif "timeout" in reason.lower():
+            reason = "Registry timed out"
         else:
-            reason = f"Pull failed: {reason[:120]}"
+            reason = f"Registry error: {reason[:120]}"
         log.warning("pull_check %s: %s", name, reason)
         return "error", reason
     except Exception as e:
-        log.warning("pull_check %s unexpected error: %s", name, e)
+        log.warning("pull_check %s unexpected: %s", name, e)
         return "error", f"Unexpected error: {str(e)[:120]}"
 
     if not remote_digest or not local_digest:
-        if local_img.id == remote_img.id:
-            return "up_to_date", ""
-        return "update_available", ""
+        # can't compare — assume up to date to avoid false positives
+        log.info("Check %s → unknown (could not compare digests)", name)
+        return "up_to_date", ""
 
     if local_digest == remote_digest:
+        log.info("Check %s → up_to_date", name)
         return "up_to_date", ""
+
+    log.info("Check %s → update_available (local=%s… remote=%s…)",
+             name, local_digest[:16], remote_digest[:16])
     return "update_available", ""
 
 def snapshot_containers() -> list[dict]:
@@ -194,7 +206,6 @@ def check_all():
             threads = []
             for c in containers:
                 name = c.name.lstrip("/")
-                # include self in check — just never allow it to be updated
                 image_str = get_image_str(c)
                 t = threading.Thread(target=_do_check_one, args=(name, image_str), daemon=True)
                 t.start()

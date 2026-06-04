@@ -69,7 +69,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── main ── */
-    main { padding: 14px 20px; max-width: 1200px; margin: 0 auto; }
+    main { padding: 14px 20px; max-width: 1400px; margin: 0 auto; }
 
     /* ── summary ── */
     .summary { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -82,7 +82,7 @@
       align-items: center;
       gap: 10px;
       flex: 1;
-      min-width: 120px;
+      min-width: 110px;
     }
     .stat-icon { font-size: 18px; }
     .stat-val  { font-size: 22px; font-weight: 700; line-height: 1; }
@@ -96,7 +96,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
     input[type="text"] {
@@ -108,7 +108,6 @@
       font-size: 13px;
       flex: 1;
       min-width: 140px;
-      max-width: 280px;
       outline: none;
     }
     input[type="text"]:focus { border-color: var(--accent); }
@@ -126,31 +125,76 @@
     .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
     .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); filter: none; }
     .btn-success { background: #16803c; color: #fff; }
-    .btn-icon    { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
-    .btn-icon:hover { color: var(--text); filter: none; }
     .btn-sm { padding: 5px 10px; font-size: 12px; }
 
-    /* ── table ── */
-    .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
-    table { width: 100%; border-collapse: collapse; }
-    thead { background: #12151f; }
-    th {
-      text-align: left; padding: 8px 12px;
-      font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: .05em;
-      color: var(--muted); cursor: pointer; user-select: none; white-space: nowrap;
+    /* ── container grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
     }
-    th:hover { color: var(--text); }
-    td { padding: 7px 12px; border-top: 1px solid var(--border); vertical-align: middle; }
-    tr:hover td { background: #ffffff07; }
-    .name-cell { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── container card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color .15s;
+    }
+    .card:hover { border-color: #3a3d4a; }
+    .card.has-update  { border-left: 3px solid var(--yellow); }
+    .card.is-checking { border-left: 3px solid var(--accent); }
+    .card.is-error    { border-left: 3px solid #4b1c1c; }
+    .card.is-self     { border-left: 3px solid #312e81; }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .card-name {
+      font-weight: 700;
+      font-size: 14px;
+      word-break: break-all;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
     .self-badge {
       font-size: 10px; background: #312e81; color: #a5b4fc;
-      padding: 1px 5px; border-radius: 4px; font-weight: 600;
+      padding: 1px 5px; border-radius: 4px; font-weight: 600; flex-shrink: 0;
     }
-    .image-cell { color: var(--muted); font-size: 12px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .actions { display: flex; gap: 5px; justify-content: flex-end; }
-    .self-lock { color: var(--muted); font-size: 13px; padding: 4px; }
+    .card-state { flex-shrink: 0; }
+
+    .card-image {
+      color: var(--muted);
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .card-actions { display: flex; gap: 5px; }
+    .self-lock { color: var(--muted); font-size: 13px; }
 
     /* ── badges ── */
     .badge {
@@ -250,15 +294,12 @@
     @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
     /* ── empty ── */
-    .empty { text-align: center; padding: 36px; color: var(--muted); }
+    .empty { text-align: center; padding: 36px; color: var(--muted); grid-column: 1/-1; }
 
-    /* ── mobile ── */
     @media (max-width: 640px) {
       main { padding: 10px 12px; }
-      .stat { min-width: 100px; padding: 7px 10px; }
-      .stat-val { font-size: 20px; }
-      .image-cell, th.hide-mob, td.hide-mob { display: none; }
-      input[type="text"] { max-width: 100%; }
+      .stat { min-width: 90px; padding: 7px 10px; }
+      .stat-val { font-size: 18px; }
     }
   </style>
 </head>
@@ -272,7 +313,7 @@
       <div class="pill-spinner"></div>
       <span>Scanning…</span>
     </div>
-    <button class="btn btn-icon btn-sm" onclick="openSettings()">⚙ Settings</button>
+    <button class="btn btn-ghost btn-sm" onclick="openSettings()">⚙ Settings</button>
     <span class="version">v{{ version }}</span>
   </div>
 </header>
@@ -305,26 +346,13 @@
 
   <!-- toolbar -->
   <div class="toolbar">
-    <input type="text" id="search" placeholder="🔍 Filter containers…" oninput="renderTable()">
+    <input type="text" id="search" placeholder="🔍 Filter containers…" oninput="renderGrid()">
     <button class="btn btn-primary btn-sm" id="check-all-btn" onclick="checkAll()">🔍 Check all</button>
     <button class="btn btn-success btn-sm" id="update-all-btn" onclick="updateAll()" disabled>⬆ Update all</button>
   </div>
 
-  <!-- table -->
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th onclick="sortBy('name')">Name</th>
-          <th onclick="sortBy('image')" class="hide-mob">Image</th>
-          <th onclick="sortBy('status')">State</th>
-          <th onclick="sortBy('update_status')">Update</th>
-          <th style="text-align:right">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
+  <!-- grid -->
+  <div class="grid" id="grid"></div>
 
 </main>
 
@@ -368,8 +396,6 @@
 
 <script>
 let containers = [];
-let sortKey = 'name';
-let sortDir = 1;
 let wasChecking = false;
 
 // ── modal ──
@@ -426,20 +452,19 @@ async function poll() {
     document.getElementById('update-all-btn').disabled = !hasUpdates || isChecking;
 
     updateStats(isChecking);
-    renderTable();
+    renderGrid();
   } catch(e) { console.error(e); }
 }
 
 // ── stats ──
 function updateStats(isChecking) {
-  // exclude self from all counts
-  const peers   = containers.filter(c => !c.is_self);
-  const total   = peers.length;
-  const running = peers.filter(c => c.status === 'running').length;
-  const updates = peers.filter(c => c.update_status === 'update_available').length;
-  const uptodate= peers.filter(c => c.update_status === 'up_to_date').length;
-  const checked = peers.filter(c => ['up_to_date','update_available','error','checking'].includes(c.update_status)).length;
-  const unknown = total - checked;
+  const peers    = containers.filter(c => !c.is_self);
+  const total    = peers.length;
+  const running  = peers.filter(c => c.status === 'running').length;
+  const updates  = peers.filter(c => c.update_status === 'update_available').length;
+  const uptodate = peers.filter(c => c.update_status === 'up_to_date').length;
+  const checked  = peers.filter(c => ['up_to_date','update_available','error','checking'].includes(c.update_status)).length;
+  const unknown  = total - checked;
 
   document.getElementById('s-total').textContent    = total;
   document.getElementById('s-running').textContent  = running;
@@ -447,42 +472,34 @@ function updateStats(isChecking) {
   document.getElementById('s-uptodate').textContent = uptodate;
   document.getElementById('s-unknown').textContent  = unknown;
 
-  // label flips between "Scanning" and "Not checked"
   const label = document.getElementById('s-unknown-label');
   label.textContent = isChecking ? 'Scanning…' : 'Not checked';
   const card = label.closest('.stat');
-  if (isChecking && unknown > 0) {
-    card.style.borderColor = '#2d5a8e';
-  } else {
-    card.style.borderColor = '';
-  }
+  card.style.borderColor = (isChecking && unknown > 0) ? '#2d5a8e' : '';
 }
 
-// ── sort ──
-function sortBy(key) {
-  if (sortKey === key) sortDir *= -1;
-  else { sortKey = key; sortDir = 1; }
-  renderTable();
-}
-
-// ── table ──
-function renderTable() {
+// ── grid ──
+function renderGrid() {
   const q = document.getElementById('search').value.toLowerCase();
   let rows = containers.filter(c =>
     c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q)
   );
+
+  // sort: updates first, then alpha
   rows.sort((a, b) => {
-    const av = a[sortKey] || '', bv = b[sortKey] || '';
-    return av < bv ? -sortDir : av > bv ? sortDir : 0;
+    const order = s => s === 'update_available' ? 0 : s === 'checking' ? 1 : s === 'unknown' ? 3 : 2;
+    const od = order(a.update_status) - order(b.update_status);
+    if (od !== 0) return od;
+    return a.name.localeCompare(b.name);
   });
 
-  const tbody = document.getElementById('tbody');
+  const grid = document.getElementById('grid');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty">No containers found</td></tr>';
+    grid.innerHTML = '<div class="empty">No containers found</div>';
     return;
   }
 
-  tbody.innerHTML = rows.map(c => {
+  grid.innerHTML = rows.map(c => {
     const stateBadge = {
       running: '<span class="badge badge-running">● Running</span>',
       exited:  '<span class="badge badge-exited">● Exited</span>',
@@ -501,23 +518,36 @@ function renderTable() {
     }
 
     const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
-    const actions = c.is_self
-      ? '<span class="self-lock" title="Update dockpatch manually">🔒</span>'
-      : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${escAttr(c.name)}')" title="Check for update">🔍</button>
-         <button class="btn btn-success btn-sm" onclick="updateOne('${escAttr(c.name)}')" ${c.update_status !== 'update_available' ? 'disabled' : ''}>Update</button>`;
 
-    return `<tr>
-      <td><div class="name-cell">${escHtml(c.name)}${selfTag}</div></td>
-      <td class="image-cell hide-mob" title="${escAttr(c.image)}">${escHtml(c.image)}</td>
-      <td>${stateBadge}</td>
-      <td>${updBadge}</td>
-      <td><div class="actions">${actions}</div></td>
-    </tr>`;
+    const actions = c.is_self
+      ? `<span class="self-lock" title="Update dockpatch manually">🔒</span>`
+      : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${escAttr(c.name)}')" title="Check">🔍</button>
+         <button class="btn btn-success btn-sm" onclick="updateOne('${escAttr(c.name)}')"
+           ${c.update_status !== 'update_available' ? 'disabled' : ''}>Update</button>`;
+
+    // card accent class
+    let cardClass = 'card';
+    if (c.is_self)                                 cardClass += ' is-self';
+    else if (c.update_status === 'update_available') cardClass += ' has-update';
+    else if (c.update_status === 'checking')         cardClass += ' is-checking';
+    else if (c.update_status === 'error')            cardClass += ' is-error';
+
+    return `<div class="${cardClass}">
+      <div class="card-top">
+        <div class="card-name">${escHtml(c.name)}${selfTag}</div>
+        <div class="card-state">${stateBadge}</div>
+      </div>
+      <div class="card-image" title="${escAttr(c.image)}">${escHtml(c.image)}</div>
+      <div class="card-bottom">
+        ${updBadge}
+        <div class="card-actions">${actions}</div>
+      </div>
+    </div>`;
   }).join('');
 }
 
 function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function escAttr(s) { return escHtml(s); }
 
