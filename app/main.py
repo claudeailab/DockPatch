@@ -3,7 +3,6 @@ import docker
 import threading
 import schedule
 import time
-import os
 import socket
 import logging
 
@@ -11,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 client = docker.from_env()
 
@@ -19,25 +18,24 @@ client = docker.from_env()
 def detect_self_name():
     """Detect our own container name by matching hostname (container ID) against running containers."""
     try:
-        hostname = socket.gethostname()  # Docker sets this to the container ID (short)
+        hostname = socket.gethostname()
         for c in client.containers.list():
             if c.id.startswith(hostname) or hostname.startswith(c.short_id):
                 log.info("Self-detected container name: %s", c.name)
                 return c.name
     except Exception as e:
         log.warning("Could not auto-detect self name: %s", e)
-    return "dockwatch"  # safe fallback
+    return "dockwatch"
 
 
 SELF_NAME = detect_self_name()
 
-# In-memory state
 state = {
-    "containers": {},       # name -> {image, current_digest, latest_digest, status, last_checked}
+    "containers": {},
     "last_full_check": None,
-    "check_schedule": 0,    # minutes, 0 = disabled (UI-only config)
-    "update_schedule": 0,   # minutes, 0 = disabled (UI-only config)
-    "updating": [],         # names currently being updated
+    "check_schedule": 0,
+    "update_schedule": 0,
+    "updating": [],
     "checking": False,
 }
 state_lock = threading.Lock()
@@ -48,7 +46,6 @@ state_lock = threading.Lock()
 # ---------------------------------------------------------------------------
 
 def get_running_containers():
-    """Return all running containers that have a registry image."""
     result = []
     for c in client.containers.list():
         if c.image.tags:
@@ -57,7 +54,6 @@ def get_running_containers():
 
 
 def pull_latest_digest(image_tag: str):
-    """Pull the image from the registry and return its RepoDigest."""
     try:
         img = client.images.pull(image_tag)
         digests = img.attrs.get("RepoDigests", [])
@@ -68,7 +64,6 @@ def pull_latest_digest(image_tag: str):
 
 
 def current_digest(image_tag: str):
-    """Return the RepoDigest of the locally running image."""
     try:
         img = client.images.get(image_tag)
         digests = img.attrs.get("RepoDigests", [])
@@ -82,7 +77,6 @@ def current_digest(image_tag: str):
 # ---------------------------------------------------------------------------
 
 def check_container(name: str, image_tag: str):
-    """Check a single container for updates. Updates state in place."""
     cur = current_digest(image_tag)
     lat = pull_latest_digest(image_tag)
     now = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -105,7 +99,6 @@ def check_container(name: str, image_tag: str):
 
 
 def check_all():
-    """Check every running container for updates."""
     with state_lock:
         if state["checking"]:
             return
@@ -134,7 +127,6 @@ def check_all():
 # ---------------------------------------------------------------------------
 
 def update_container(name: str):
-    """Pull latest image, recreate the container."""
     if name == SELF_NAME:
         log.warning("Skipping self-update of %s", name)
         return {"ok": False, "error": "Cannot update dockwatch while it is running."}
@@ -190,7 +182,6 @@ def update_container(name: str):
 
 
 def update_all():
-    """Update every container that has an available update (except self)."""
     with state_lock:
         targets = [
             name for name, info in state["containers"].items()
@@ -315,11 +306,13 @@ def api_schedule():
 
 
 # ---------------------------------------------------------------------------
-# Boot
+# Boot — runs whether started via Gunicorn or directly
 # ---------------------------------------------------------------------------
 
+setup_schedules()
+threading.Thread(target=run_scheduler, daemon=True).start()
+threading.Thread(target=check_all, daemon=True).start()
+log.info("Startup scan initiated.")
+
 if __name__ == "__main__":
-    setup_schedules()
-    threading.Thread(target=run_scheduler, daemon=True).start()
-    threading.Thread(target=check_all, daemon=True).start()
     app.run(host="0.0.0.0", port=8093, debug=False)
