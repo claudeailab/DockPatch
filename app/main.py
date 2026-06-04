@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.1.8"
+VERSION = "0.1.9"
 
 client = docker.from_env()
 
@@ -194,8 +194,7 @@ def check_all():
             threads = []
             for c in containers:
                 name = c.name.lstrip("/")
-                if name == SELF_NAME:
-                    continue
+                # include self in check — just never allow it to be updated
                 image_str = get_image_str(c)
                 t = threading.Thread(target=_do_check_one, args=(name, image_str), daemon=True)
                 t.start()
