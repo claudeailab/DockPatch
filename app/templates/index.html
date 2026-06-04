@@ -421,8 +421,6 @@ function applyColumns() {
   if (saved && parseInt(saved) >= 1) {
     grid.style.gridTemplateColumns = `repeat(${parseInt(saved)}, 1fr)`;
   } else {
-    // responsive default
-    grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
     applyResponsiveCols();
   }
 }
@@ -458,24 +456,30 @@ function backdropClose(e) {
 async function loadSettings() {
   const r = await fetch('/api/settings');
   const d = await r.json();
-  document.getElementById('cfg-check').value     = d.check_interval_minutes  || '';
-  document.getElementById('cfg-update').value    = d.update_interval_minutes || '';
+  // Use nullish coalescing so 0 is preserved, not replaced with ''
+  document.getElementById('cfg-check').value     = d.check_interval_minutes  ?? '';
+  document.getElementById('cfg-update').value    = d.update_interval_minutes ?? '';
   document.getElementById('cfg-startup').checked = !!d.check_on_startup;
 }
 
 async function saveSettings() {
   // persist columns to localStorage
-  const colsVal = parseInt(document.getElementById('cfg-cols').value);
-  if (colsVal >= 1) {
+  const colsRaw = document.getElementById('cfg-cols').value;
+  const colsVal = colsRaw !== '' ? parseInt(colsRaw) : NaN;
+  if (!isNaN(colsVal) && colsVal >= 1) {
     localStorage.setItem(COLS_KEY, colsVal);
   } else {
     localStorage.removeItem(COLS_KEY);
   }
   applyColumns();
 
+  // Read interval values; treat empty string as 0, but keep explicit 0 as 0
+  const checkRaw  = document.getElementById('cfg-check').value;
+  const updateRaw = document.getElementById('cfg-update').value;
+
   const payload = {
-    check_interval_minutes:  parseInt(document.getElementById('cfg-check').value)  || 0,
-    update_interval_minutes: parseInt(document.getElementById('cfg-update').value) || 0,
+    check_interval_minutes:  checkRaw  !== '' ? parseInt(checkRaw,  10) : 0,
+    update_interval_minutes: updateRaw !== '' ? parseInt(updateRaw, 10) : 0,
     check_on_startup:        document.getElementById('cfg-startup').checked,
   };
   const r = await fetch('/api/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
@@ -517,19 +521,24 @@ function updateStats(isChecking) {
   const running  = peers.filter(c => c.status === 'running').length;
   const updates  = peers.filter(c => c.update_status === 'update_available').length;
   const uptodate = peers.filter(c => c.update_status === 'up_to_date').length;
-  const checked  = peers.filter(c => ['up_to_date','update_available','error','checking'].includes(c.update_status)).length;
-  const unknown  = total - checked;
+  // "unknown" = not yet touched: status is 'unknown' and not currently being checked
+  const unknown  = peers.filter(c => c.update_status === 'unknown').length;
+  // containers currently being checked (shows as remaining during a scan)
+  const checking = peers.filter(c => c.update_status === 'checking').length;
 
   document.getElementById('s-total').textContent    = total;
   document.getElementById('s-running').textContent  = running;
   document.getElementById('s-updates').textContent  = updates;
   document.getElementById('s-uptodate').textContent = uptodate;
-  document.getElementById('s-unknown').textContent  = unknown;
+
+  // During a scan show remaining (unknown + currently checking); after, just unknown
+  const unknownDisplay = isChecking ? (unknown + checking) : unknown;
+  document.getElementById('s-unknown').textContent  = unknownDisplay;
 
   const label = document.getElementById('s-unknown-label');
-  label.textContent = isChecking ? 'Scanning…' : 'Not checked';
+  label.textContent = isChecking ? 'Remaining' : 'Not checked';
   const card = label.closest('.stat');
-  card.style.borderColor = (isChecking && unknown > 0) ? '#2d5a8e' : '';
+  card.style.borderColor = (isChecking && unknownDisplay > 0) ? '#2d5a8e' : '';
 }
 
 // ── grid ──
@@ -568,7 +577,7 @@ function renderGrid() {
         up_to_date:       '<span class="badge badge-uptodate">✓ Up to date</span>',
         update_available: '<span class="badge badge-available">⬆ Update available</span>',
         error:            `<span class="badge badge-error" title="${escHtml(c.update_reason || '')}">✕ Error</span>`,
-      }[c.update_status] || '<span class="badge badge-unknown">— Unknown</span>';
+      }[c.update_status] || '<span class="badge badge-unknown">— Not checked</span>';
     }
 
     const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
