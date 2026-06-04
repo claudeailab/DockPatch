@@ -97,20 +97,29 @@
       align-items: center;
       gap: 8px;
       margin-bottom: 12px;
-      flex-wrap: wrap;
     }
-    input[type="text"] {
+    .toolbar-search {
+      position: relative;
+      width: 220px;
+      flex-shrink: 0;
+    }
+    .toolbar-search input[type="text"] {
+      width: 100%;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       color: var(--text);
       padding: 6px 10px;
       font-size: 13px;
-      flex: 1;
-      min-width: 140px;
       outline: none;
     }
-    input[type="text"]:focus { border-color: var(--accent); }
+    .toolbar-search input[type="text"]:focus { border-color: var(--accent); }
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
 
     /* ── buttons ── */
     .btn {
@@ -309,6 +318,7 @@
       main { padding: 10px 12px; }
       .stat { min-width: 90px; padding: 7px 10px; }
       .stat-val { font-size: 18px; }
+      .toolbar-search { width: 140px; }
     }
   </style>
 </head>
@@ -355,9 +365,13 @@
 
   <!-- toolbar -->
   <div class="toolbar">
-    <input type="text" id="search" placeholder="🔍 Filter containers…" oninput="renderGrid()">
-    <button class="btn btn-primary btn-sm" id="check-all-btn" onclick="checkAll()">🔍 Check all</button>
-    <button class="btn btn-success btn-sm" id="update-all-btn" onclick="updateAll()" disabled>⬆ Update all</button>
+    <div class="toolbar-search">
+      <input type="text" id="search" placeholder="🔍 Filter containers…" oninput="renderGrid()">
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn btn-primary btn-sm" id="check-all-btn" onclick="checkAll()">🔍 Check all</button>
+      <button class="btn btn-success btn-sm" id="update-all-btn" onclick="updateAll()" disabled>Update all</button>
+    </div>
   </div>
 
   <!-- grid -->
@@ -416,12 +430,10 @@ let wasChecking = false;
 let pollInFlight = false;
 
 // ── stat counter animation ──
-// Tracks the currently-displayed (animated) value for each stat element.
 const statDisplayed = {};
 const statAnimFrames = {};
 
 function animateStat(id, target) {
-  // Initialise display value on first call
   if (statDisplayed[id] === undefined) {
     statDisplayed[id] = target;
     document.getElementById(id).textContent = target;
@@ -429,16 +441,13 @@ function animateStat(id, target) {
   }
 
   const current = statDisplayed[id];
-  if (current === target) return; // nothing to do
+  if (current === target) return;
 
-  // Cancel any in-progress animation for this stat
   if (statAnimFrames[id]) {
     cancelAnimationFrame(statAnimFrames[id]);
     statAnimFrames[id] = null;
   }
 
-  // Always step by 1 per animation frame so the counter ticks smoothly.
-  // Direction is determined by whether we're going up or down.
   const direction = target > current ? 1 : -1;
 
   function step() {
@@ -585,7 +594,6 @@ function updateStats(isChecking) {
   const unknown  = peers.filter(c => c.update_status === 'unknown').length;
   const checking = peers.filter(c => c.update_status === 'checking').length;
 
-  // During a scan show remaining (unknown + currently checking); after, just unknown
   const unknownDisplay = isChecking ? (unknown + checking) : unknown;
 
   animateStat('s-total',    total);
