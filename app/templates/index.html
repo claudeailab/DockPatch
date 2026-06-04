@@ -8,17 +8,16 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #0f1117;
-      --surface:  #1a1d27;
-      --surface2: #21253300;
-      --border:   #2a2d3a;
-      --accent:   #3b82f6;
-      --green:    #22c55e;
-      --yellow:   #f59e0b;
-      --red:      #ef4444;
-      --muted:    #6b7280;
-      --text:     #e2e8f0;
-      --radius:   8px;
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --border:  #2a2d3a;
+      --accent:  #3b82f6;
+      --green:   #22c55e;
+      --yellow:  #f59e0b;
+      --red:     #ef4444;
+      --muted:   #6b7280;
+      --text:    #e2e8f0;
+      --radius:  8px;
     }
 
     body {
@@ -34,33 +33,32 @@
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       padding: 0 20px;
-      height: 52px;
+      height: 50px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
       position: sticky;
       top: 0;
       z-index: 100;
     }
-    .logo { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .logo span { font-size: 20px; }
+    .logo { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     .header-right { display: flex; align-items: center; gap: 8px; }
+    .version { font-size: 11px; color: var(--muted); }
 
-    /* ── checking banner ── */
-    #checking-banner {
+    /* ── scanning banner ── */
+    #scanning-banner {
       display: none;
       background: linear-gradient(90deg, #1e3a5f, #1a2d4a);
       border-bottom: 1px solid #2d5a8e;
-      padding: 8px 20px;
+      padding: 7px 20px;
       align-items: center;
       gap: 10px;
       font-size: 13px;
       color: #93c5fd;
     }
-    #checking-banner.visible { display: flex; }
+    #scanning-banner.visible { display: flex; }
     .spinner {
-      width: 16px; height: 16px;
+      width: 15px; height: 15px;
       border: 2px solid #3b82f640;
       border-top-color: #3b82f6;
       border-radius: 50%;
@@ -68,62 +66,45 @@
       flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .banner-bar {
-      flex: 1;
-      height: 3px;
-      background: #1e3a5f;
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .banner-bar-fill {
+    .banner-bar { flex: 1; height: 3px; background: #1e3a5f; border-radius: 2px; overflow: hidden; }
+    .banner-fill {
       height: 100%;
       background: linear-gradient(90deg, #3b82f6, #60a5fa);
       border-radius: 2px;
-      animation: indeterminate 1.5s ease-in-out infinite;
       width: 40%;
+      animation: indeterminate 1.5s ease-in-out infinite;
     }
     @keyframes indeterminate {
-      0%   { transform: translateX(-100%); }
-      100% { transform: translateX(350%); }
+      0%   { transform: translateX(-150%); }
+      100% { transform: translateX(400%); }
     }
 
-    /* ── main layout ── */
-    main {
-      padding: 16px 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
+    /* ── main ── */
+    main { padding: 14px 20px; max-width: 1200px; margin: 0 auto; }
 
-    /* ── summary row ── */
-    .summary {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-    }
+    /* ── summary ── */
+    .summary { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
     .stat {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 10px 16px;
+      padding: 8px 14px;
       display: flex;
       align-items: center;
       gap: 10px;
       flex: 1;
-      min-width: 130px;
+      min-width: 120px;
     }
-    .stat-icon { font-size: 20px; }
-    .stat-val { font-size: 20px; font-weight: 700; line-height: 1; }
+    .stat-icon { font-size: 18px; }
+    .stat-val  { font-size: 22px; font-weight: 700; line-height: 1; }
     .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    /* colour accents on stat cards */
+    .stat.c-updates  { border-color: #92400e; }
+    .stat.c-uptodate { border-color: #166534; }
+    .stat.c-unknown  { border-color: #374151; }
 
     /* ── toolbar ── */
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
+    .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
     .toolbar-left { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
     input[type="text"] {
       background: var(--surface);
@@ -139,204 +120,179 @@
 
     /* ── buttons ── */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 6px 12px;
-      border-radius: var(--radius);
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      transition: opacity .15s, filter .15s;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border-radius: var(--radius); border: none;
+      cursor: pointer; font-size: 13px; font-weight: 500;
+      transition: opacity .15s, filter .15s; white-space: nowrap;
     }
     .btn:hover:not(:disabled) { filter: brightness(1.15); }
-    .btn:disabled { opacity: .45; cursor: default; }
-    .btn-primary  { background: var(--accent); color: #fff; }
-    .btn-ghost    { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn:disabled { opacity: .4; cursor: default; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
     .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); filter: none; }
-    .btn-success  { background: #16803c; color: #fff; }
-    .btn-danger   { background: #991b1b; color: #fff; }
-    .btn-sm       { padding: 4px 9px; font-size: 12px; }
-    .btn-settings { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
-    .btn-settings:hover { color: var(--text); filter: none; }
-    .btn-settings.active { border-color: var(--accent); color: var(--accent); }
+    .btn-success { background: #16803c; color: #fff; }
+    .btn-icon    { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+    .btn-icon:hover { color: var(--text); filter: none; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
 
     /* ── table ── */
     .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
     table { width: 100%; border-collapse: collapse; }
     thead { background: #12151f; }
     th {
-      text-align: left;
-      padding: 9px 12px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .05em;
-      color: var(--muted);
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
+      text-align: left; padding: 8px 12px;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--muted); cursor: pointer; user-select: none; white-space: nowrap;
     }
     th:hover { color: var(--text); }
-    td {
-      padding: 8px 12px;
-      border-top: 1px solid var(--border);
-      vertical-align: middle;
-    }
-    tr:hover td { background: #ffffff08; }
+    td { padding: 7px 12px; border-top: 1px solid var(--border); vertical-align: middle; }
+    tr:hover td { background: #ffffff07; }
     .name-cell { font-weight: 600; display: flex; align-items: center; gap: 6px; }
     .self-badge {
-      font-size: 10px;
-      background: #312e81;
-      color: #a5b4fc;
-      padding: 1px 5px;
-      border-radius: 4px;
-      font-weight: 600;
+      font-size: 10px; background: #312e81; color: #a5b4fc;
+      padding: 1px 5px; border-radius: 4px; font-weight: 600;
     }
     .image-cell { color: var(--muted); font-size: 12px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .actions { display: flex; gap: 5px; justify-content: flex-end; flex-wrap: wrap; }
-    .self-lock { font-size: 13px; color: var(--muted); padding: 4px 6px; }
+    .actions { display: flex; gap: 5px; justify-content: flex-end; }
+    .self-lock { color: var(--muted); font-size: 13px; padding: 4px; }
 
     /* ── badges ── */
     .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; white-space: nowrap;
     }
-    .badge-running   { background: #14532d40; color: var(--green); border: 1px solid #166534; }
-    .badge-exited    { background: #7f1d1d40; color: var(--red);   border: 1px solid #991b1b; }
+    .badge-running   { background: #14532d40; color: var(--green);  border: 1px solid #166534; }
+    .badge-exited    { background: #7f1d1d40; color: var(--red);    border: 1px solid #991b1b; }
     .badge-paused    { background: #78350f40; color: var(--yellow); border: 1px solid #92400e; }
     .badge-other     { background: #1e293b;   color: var(--muted);  border: 1px solid var(--border); }
-    .badge-uptodate  { background: #14532d40; color: var(--green); border: 1px solid #166534; }
+    .badge-uptodate  { background: #14532d40; color: var(--green);  border: 1px solid #166534; }
     .badge-available { background: #78350f40; color: var(--yellow); border: 1px solid #92400e; }
     .badge-unknown   { background: #1e293b;   color: var(--muted);  border: 1px solid var(--border); }
-    .badge-error     { background: #7f1d1d40; color: var(--red);   border: 1px solid #991b1b; }
-    .badge-checking  { background: #1e3a5f40; color: #93c5fd; border: 1px solid #2d5a8e; }
+    .badge-error     { background: #7f1d1d40; color: var(--red);    border: 1px solid #991b1b; }
+    .badge-checking  { background: #1e3a5f40; color: #93c5fd;       border: 1px solid #2d5a8e; }
 
-    /* ── settings panel ── */
-    #settings-panel {
+    /* ── modal backdrop ── */
+    .modal-backdrop {
       display: none;
+      position: fixed; inset: 0;
+      background: #00000088;
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    /* ── modal box ── */
+    .modal {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      margin-bottom: 12px;
-      gap: 14px;
-      flex-wrap: wrap;
-      align-items: flex-end;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 24px 48px #00000066;
     }
-    #settings-panel.open { display: flex; }
-    .setting-group { display: flex; flex-direction: column; gap: 4px; }
-    .setting-group label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-    .setting-group input[type="number"] {
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .modal-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 20px; cursor: pointer; line-height: 1;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .modal-close:hover { color: var(--text); background: var(--border); }
+    .modal-body { display: flex; flex-direction: column; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .form-hint  { font-size: 11px; color: var(--muted); }
+    .form-group input[type="number"] {
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       color: var(--text);
-      padding: 6px 10px;
+      padding: 7px 10px;
       font-size: 13px;
-      width: 130px;
       outline: none;
+      width: 100%;
     }
-    .setting-group input[type="number"]:focus { border-color: var(--accent); }
-    .setting-hint { font-size: 11px; color: var(--muted); }
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .toggle-row label { font-size: 13px; color: var(--text); text-transform: none; letter-spacing: 0; }
+    .form-group input[type="number"]:focus { border-color: var(--accent); }
+    .toggle-row { display: flex; align-items: center; gap: 10px; }
+    .toggle-label { font-size: 13px; color: var(--text); }
     /* toggle switch */
-    .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+    .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute; inset: 0;
-      background: var(--border);
-      border-radius: 20px;
-      cursor: pointer;
-      transition: background .2s;
+      background: var(--border); border-radius: 20px;
+      cursor: pointer; transition: background .2s;
     }
     .slider:before {
-      content: "";
-      position: absolute;
-      width: 14px; height: 14px;
-      left: 3px; top: 3px;
-      background: #fff;
-      border-radius: 50%;
-      transition: transform .2s;
+      content: ""; position: absolute;
+      width: 14px; height: 14px; left: 3px; top: 3px;
+      background: #fff; border-radius: 50%; transition: transform .2s;
     }
     .switch input:checked + .slider { background: var(--accent); }
     .switch input:checked + .slider:before { transform: translateX(16px); }
-    .settings-actions { display: flex; gap: 8px; align-items: flex-end; padding-bottom: 0; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
 
     /* ── toast ── */
     #toast-container {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 999;
+      position: fixed; bottom: 20px; right: 20px;
+      display: flex; flex-direction: column; gap: 8px; z-index: 999;
     }
     .toast {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 16px;
-      font-size: 13px;
-      animation: slideIn .2s ease;
-      max-width: 320px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 9px 14px;
+      font-size: 13px; animation: slideIn .2s ease; max-width: 300px;
     }
     .toast.success { border-left: 3px solid var(--green); }
     .toast.error   { border-left: 3px solid var(--red); }
     .toast.info    { border-left: 3px solid var(--accent); }
-    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* ── version ── */
-    .version { font-size: 11px; color: var(--muted); }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
     /* ── empty ── */
-    .empty { text-align: center; padding: 40px; color: var(--muted); }
+    .empty { text-align: center; padding: 36px; color: var(--muted); }
 
     /* ── mobile ── */
     @media (max-width: 640px) {
-      main { padding: 12px; }
-      .stat { min-width: 100px; padding: 8px 12px; }
-      .stat-val { font-size: 18px; }
-      .image-cell { display: none; }
-      th.hide-mobile, td.hide-mobile { display: none; }
+      main { padding: 10px 12px; }
+      .stat { min-width: 100px; padding: 7px 10px; }
+      .stat-val { font-size: 20px; }
+      .image-cell, th.hide-mob, td.hide-mob { display: none; }
       input[type="text"] { width: 140px; }
-      .setting-group input[type="number"] { width: 110px; }
     }
   </style>
 </head>
 <body>
 
+<!-- ── header ── -->
 <header>
   <div class="logo"><span>🐳</span> Dockwatch</div>
   <div class="header-right">
-    <button class="btn btn-settings btn-sm" id="settings-btn" onclick="toggleSettings()">⚙ Settings</button>
+    <button class="btn btn-icon btn-sm" onclick="openSettings()">⚙ Settings</button>
     <span class="version">v{{ version }}</span>
   </div>
 </header>
 
-<div id="checking-banner">
+<!-- ── scanning banner ── -->
+<div id="scanning-banner">
   <div class="spinner"></div>
-  <span>Scanning containers for updates…</span>
-  <div class="banner-bar"><div class="banner-bar-fill"></div></div>
+  <span id="banner-text">Scanning containers for updates…</span>
+  <div class="banner-bar"><div class="banner-fill"></div></div>
 </div>
 
 <main>
 
-  <!-- summary -->
+  <!-- summary cards -->
   <div class="summary">
     <div class="stat">
       <span class="stat-icon">📦</span>
@@ -346,41 +302,17 @@
       <span class="stat-icon">🟢</span>
       <div><div class="stat-val" id="s-running">—</div><div class="stat-label">Running</div></div>
     </div>
-    <div class="stat">
+    <div class="stat c-updates">
       <span class="stat-icon">⬆️</span>
-      <div><div class="stat-val" id="s-updates">—</div><div class="stat-label">Updates</div></div>
+      <div><div class="stat-val" id="s-updates">—</div><div class="stat-label">Updates available</div></div>
     </div>
-    <div class="stat">
+    <div class="stat c-uptodate">
       <span class="stat-icon">✅</span>
       <div><div class="stat-val" id="s-uptodate">—</div><div class="stat-label">Up to date</div></div>
     </div>
-  </div>
-
-  <!-- settings panel -->
-  <div id="settings-panel">
-    <div class="setting-group">
-      <label>Check Interval</label>
-      <input type="number" id="cfg-check" min="0" placeholder="0 = off">
-      <span class="setting-hint">minutes (0 = off)</span>
-    </div>
-    <div class="setting-group">
-      <label>Auto-update Interval</label>
-      <input type="number" id="cfg-update" min="0" placeholder="0 = off">
-      <span class="setting-hint">minutes (0 = off)</span>
-    </div>
-    <div class="setting-group">
-      <label>Startup</label>
-      <div class="toggle-row">
-        <label class="switch">
-          <input type="checkbox" id="cfg-startup">
-          <span class="slider"></span>
-        </label>
-        <label for="cfg-startup">Check for updates on start</label>
-      </div>
-    </div>
-    <div class="settings-actions">
-      <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
-      <button class="btn btn-ghost btn-sm" onclick="toggleSettings()">Close</button>
+    <div class="stat c-unknown">
+      <span class="stat-icon">❓</span>
+      <div><div class="stat-val" id="s-unknown">—</div><div class="stat-label">Not checked</div></div>
     </div>
   </div>
 
@@ -398,7 +330,7 @@
       <thead>
         <tr>
           <th onclick="sortBy('name')">Name</th>
-          <th onclick="sortBy('image')" class="hide-mobile">Image</th>
+          <th onclick="sortBy('image')" class="hide-mob">Image</th>
           <th onclick="sortBy('status')">State</th>
           <th onclick="sortBy('update_status')">Update</th>
           <th style="text-align:right">Actions</th>
@@ -410,27 +342,67 @@
 
 </main>
 
+<!-- ── settings modal ── -->
+<div class="modal-backdrop" id="settings-modal" onclick="backdropClose(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">⚙ Settings</span>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Check interval</label>
+        <input type="number" id="cfg-check" min="0" placeholder="e.g. 60">
+        <span class="form-hint">Minutes between automatic update checks. 0 = disabled.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Auto-update interval</label>
+        <input type="number" id="cfg-update" min="0" placeholder="e.g. 1440">
+        <span class="form-hint">Minutes between automatic updates for containers with updates available. 0 = disabled.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Startup behaviour</label>
+        <div class="toggle-row">
+          <label class="switch">
+            <input type="checkbox" id="cfg-startup">
+            <span class="slider"></span>
+          </label>
+          <span class="toggle-label">Check for updates on start</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save settings</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script>
 let containers = [];
 let sortKey = 'name';
 let sortDir = 1;
-let settingsOpen = false;
 let wasChecking = false;
 
-function toggleSettings() {
-  settingsOpen = !settingsOpen;
-  document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
-  document.getElementById('settings-btn').classList.toggle('active', settingsOpen);
-  if (settingsOpen) loadSettings();
+// ── modal ──
+function openSettings() {
+  loadSettings();
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+function backdropClose(e) {
+  if (e.target === document.getElementById('settings-modal')) closeSettings();
 }
 
 async function loadSettings() {
   const r = await fetch('/api/settings');
   const d = await r.json();
-  document.getElementById('cfg-check').value   = d.check_interval_minutes || '';
-  document.getElementById('cfg-update').value  = d.update_interval_minutes || '';
+  document.getElementById('cfg-check').value    = d.check_interval_minutes  || '';
+  document.getElementById('cfg-update').value   = d.update_interval_minutes || '';
   document.getElementById('cfg-startup').checked = !!d.check_on_startup;
 }
 
@@ -442,10 +414,11 @@ async function saveSettings() {
   };
   const r = await fetch('/api/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
   const d = await r.json();
-  if (d.ok) toast('Settings saved', 'success');
+  if (d.ok) { toast('Settings saved', 'success'); closeSettings(); }
   else toast('Failed to save settings', 'error');
 }
 
+// ── poll ──
 async function poll() {
   try {
     const r = await fetch('/api/containers');
@@ -453,13 +426,11 @@ async function poll() {
     containers = d.containers;
     const isChecking = d.checking_all;
 
-    const banner = document.getElementById('checking-banner');
+    const banner = document.getElementById('scanning-banner');
     if (isChecking) {
       banner.classList.add('visible');
     } else {
-      if (wasChecking && !isChecking) {
-        toast('Update check complete', 'success');
-      }
+      if (wasChecking) toast('Update check complete', 'success');
       banner.classList.remove('visible');
     }
     wasChecking = isChecking;
@@ -470,25 +441,38 @@ async function poll() {
   } catch(e) { console.error(e); }
 }
 
+// ── stats ──
 function updateStats() {
-  document.getElementById('s-total').textContent   = containers.length;
-  document.getElementById('s-running').textContent = containers.filter(c => c.status === 'running').length;
-  document.getElementById('s-updates').textContent = containers.filter(c => c.update_status === 'update_available').length;
-  document.getElementById('s-uptodate').textContent= containers.filter(c => c.update_status === 'up_to_date').length;
+  const total    = containers.length;
+  const running  = containers.filter(c => c.status === 'running').length;
+  const updates  = containers.filter(c => c.update_status === 'update_available').length;
+  const uptodate = containers.filter(c => c.update_status === 'up_to_date').length;
+  // unknown = anything that isn't confirmed up-to-date, update-available, or error
+  const checked  = containers.filter(c => ['up_to_date','update_available','error'].includes(c.update_status)).length;
+  const unknown  = total - checked;
+
+  document.getElementById('s-total').textContent   = total;
+  document.getElementById('s-running').textContent = running;
+  document.getElementById('s-updates').textContent = updates;
+  document.getElementById('s-uptodate').textContent = uptodate;
+  document.getElementById('s-unknown').textContent  = unknown;
 }
 
+// ── sort ──
 function sortBy(key) {
   if (sortKey === key) sortDir *= -1;
   else { sortKey = key; sortDir = 1; }
   renderTable();
 }
 
+// ── table ──
 function renderTable() {
   const q = document.getElementById('search').value.toLowerCase();
-  let rows = containers.filter(c => c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q));
+  let rows = containers.filter(c =>
+    c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q)
+  );
   rows.sort((a, b) => {
-    const av = a[sortKey] || '';
-    const bv = b[sortKey] || '';
+    const av = a[sortKey] || '', bv = b[sortKey] || '';
     return av < bv ? -sortDir : av > bv ? sortDir : 0;
   });
 
@@ -506,25 +490,25 @@ function renderTable() {
     }[c.status] || `<span class="badge badge-other">● ${c.status}</span>`;
 
     let updBadge;
-    if (c.checking) {
+    if (c.update_status === 'checking') {
       updBadge = '<span class="badge badge-checking">⟳ Checking…</span>';
     } else {
       updBadge = {
         up_to_date:       '<span class="badge badge-uptodate">✓ Up to date</span>',
         update_available: '<span class="badge badge-available">⬆ Update available</span>',
-        error:            '<span class="badge badge-error">✕ Error</span>',
+        error:            `<span class="badge badge-error" title="${c.update_reason}">✕ Error</span>`,
       }[c.update_status] || '<span class="badge badge-unknown">— Unknown</span>';
     }
 
     const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
     const actions = c.is_self
-      ? '<span class="self-lock" title="Cannot update self while running">🔒</span>'
-      : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${c.name}')">🔍</button>
+      ? '<span class="self-lock" title="Update dockwatch manually">🔒</span>'
+      : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${c.name}')" title="Check for update">🔍</button>
          <button class="btn btn-success btn-sm" onclick="updateOne('${c.name}')" ${c.update_status !== 'update_available' ? 'disabled' : ''}>⬆ Update</button>`;
 
     return `<tr>
       <td><div class="name-cell">${c.name}${selfTag}</div></td>
-      <td class="image-cell hide-mobile" title="${c.image}">${c.image}</td>
+      <td class="image-cell hide-mob" title="${c.image}">${c.image}</td>
       <td>${stateBadge}</td>
       <td>${updBadge}</td>
       <td><div class="actions">${actions}</div></td>
@@ -532,9 +516,10 @@ function renderTable() {
   }).join('');
 }
 
+// ── actions ──
 async function checkAll() {
   await fetch('/api/check/all', { method: 'POST' });
-  toast('Checking all containers…', 'info');
+  toast('Scanning all containers…', 'info');
 }
 
 async function checkOne(name) {
@@ -547,7 +532,7 @@ async function updateOne(name) {
   toast('Updating ' + name + '…', 'info');
   const r = await fetch('/api/update/' + encodeURIComponent(name), { method: 'POST' });
   const d = await r.json();
-  if (d.ok) toast(name + ' updated successfully ✓', 'success');
+  if (d.ok) toast(name + ' updated ✓', 'success');
   else toast('Update failed: ' + d.error, 'error');
   poll();
 }
@@ -560,7 +545,9 @@ function toast(msg, type = 'info') {
   setTimeout(() => el.remove(), 4000);
 }
 
-// start
+// close modal on Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSettings(); });
+
 poll();
 setInterval(poll, 4000);
 </script>

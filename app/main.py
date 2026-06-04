@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 
 client = docker.from_env()
 
@@ -69,7 +69,7 @@ checking_all = False
 updating_set: set = set()
 
 def pull_check(container) -> dict:
-    """Check if a container has an update available. Returns status dict."""
+    """Check if a container has an update available."""
     try:
         current_img = container.image
         repo_tags = current_img.tags
@@ -95,15 +95,16 @@ def get_containers():
         for c in containers:
             is_self = (c.name == SELF_NAME)
             cached = container_cache.get(c.name, {})
+            checking = c.name in updating_set
             result.append({
                 "id": c.short_id,
                 "name": c.name,
                 "image": c.image.tags[0] if c.image.tags else c.image.short_id,
                 "status": c.status,
-                "update_status": cached.get("status", "unknown"),
+                "update_status": "checking" if checking else cached.get("status", "unknown"),
                 "update_reason": cached.get("reason", ""),
                 "is_self": is_self,
-                "checking": c.name in updating_set,
+                "checking": checking,
             })
     return result
 
@@ -116,16 +117,23 @@ def check_all():
     try:
         containers = client.containers.list(all=True)
         for c in containers:
+            with cache_lock:
+                updating_set.add(c.name)
             result = pull_check(c)
             with cache_lock:
                 container_cache[c.name] = result
+                updating_set.discard(c.name)
     except Exception as e:
         log.error("check_all error: %s", e)
     finally:
         checking_all = False
+        with cache_lock:
+            updating_set.clear()
     log.info("Check complete.")
 
 def check_one(name):
+    with cache_lock:
+        updating_set.add(name)
     try:
         c = client.containers.get(name)
         result = pull_check(c)
@@ -134,6 +142,9 @@ def check_one(name):
     except Exception as e:
         with cache_lock:
             container_cache[name] = {"status": "error", "reason": str(e)}
+    finally:
+        with cache_lock:
+            updating_set.discard(name)
 
 def update_one(name):
     if name == SELF_NAME:
@@ -147,7 +158,6 @@ def update_one(name):
         client.images.pull(img_tag)
         c.stop()
         c.remove()
-        # Recreate with same config
         attrs = c.attrs["HostConfig"]
         client.containers.run(
             img_tag,
@@ -162,25 +172,17 @@ def update_one(name):
         return {"ok": False, "error": str(e)}
 
 # ---- scheduler ----
-scheduler_thread_stop = threading.Event()
-
 def run_scheduler():
-    while not scheduler_thread_stop.is_set():
+    while True:
         schedule.run_pending()
         time.sleep(10)
 
-check_job = None
-update_job = None
-
 def apply_schedules():
-    global check_job, update_job
     schedule.clear()
-    check_job = None
-    update_job = None
     ci = settings.get("check_interval_minutes", 0)
     ui = settings.get("update_interval_minutes", 0)
     if ci and ci > 0:
-        check_job = schedule.every(ci).minutes.do(lambda: threading.Thread(target=check_all, daemon=True).start())
+        schedule.every(ci).minutes.do(lambda: threading.Thread(target=check_all, daemon=True).start())
         log.info("Check schedule: every %s minutes", ci)
     if ui and ui > 0:
         def auto_update():
@@ -193,7 +195,7 @@ def apply_schedules():
                 if s == "update_available":
                     log.info("Auto-updating %s", c.name)
                     update_one(c.name)
-        update_job = schedule.every(ui).minutes.do(lambda: threading.Thread(target=auto_update, daemon=True).start())
+        schedule.every(ui).minutes.do(lambda: threading.Thread(target=auto_update, daemon=True).start())
         log.info("Auto-update schedule: every %s minutes", ui)
 
 # ---- routes ----
@@ -231,9 +233,9 @@ def api_get_settings():
 def api_save_settings():
     global settings
     data = request.get_json(force=True)
-    settings["check_interval_minutes"] = int(data.get("check_interval_minutes") or 0)
+    settings["check_interval_minutes"]  = int(data.get("check_interval_minutes") or 0)
     settings["update_interval_minutes"] = int(data.get("update_interval_minutes") or 0)
-    settings["check_on_startup"] = bool(data.get("check_on_startup", True))
+    settings["check_on_startup"]        = bool(data.get("check_on_startup", True))
     save_settings()
     apply_schedules()
     return jsonify({"ok": True, "settings": settings})
