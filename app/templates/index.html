@@ -519,8 +519,8 @@ function backdropClose(e) {
 async function loadSettings() {
   const r = await fetch('/api/settings');
   const d = await r.json();
-  document.getElementById('cfg-check').value     = d.check_interval_minutes  ?? '';
-  document.getElementById('cfg-update').value    = d.update_interval_minutes ?? '';
+  document.getElementById('cfg-check').value     = d.check_interval_minutes  ?? 0;
+  document.getElementById('cfg-update').value    = d.update_interval_minutes ?? 0;
   document.getElementById('cfg-startup').checked = !!d.check_on_startup;
 }
 
