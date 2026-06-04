@@ -415,6 +415,46 @@ let containers = [];
 let wasChecking = false;
 let pollInFlight = false;
 
+// ── stat counter animation ──
+// Tracks the currently-displayed (animated) value for each stat element.
+const statDisplayed = {};
+const statAnimFrames = {};
+
+function animateStat(id, target) {
+  // Initialise display value on first call
+  if (statDisplayed[id] === undefined) {
+    statDisplayed[id] = target;
+    document.getElementById(id).textContent = target;
+    return;
+  }
+
+  const current = statDisplayed[id];
+  if (current === target) return; // nothing to do
+
+  // Cancel any in-progress animation for this stat
+  if (statAnimFrames[id]) {
+    cancelAnimationFrame(statAnimFrames[id]);
+    statAnimFrames[id] = null;
+  }
+
+  // Always step by 1 per animation frame so the counter ticks smoothly.
+  // Direction is determined by whether we're going up or down.
+  const direction = target > current ? 1 : -1;
+
+  function step() {
+    statDisplayed[id] += direction;
+    document.getElementById(id).textContent = statDisplayed[id];
+
+    if (statDisplayed[id] !== target) {
+      statAnimFrames[id] = requestAnimationFrame(step);
+    } else {
+      statAnimFrames[id] = null;
+    }
+  }
+
+  statAnimFrames[id] = requestAnimationFrame(step);
+}
+
 // ── helpers ──
 function escHtml(s) {
   return String(s)
@@ -423,7 +463,6 @@ function escHtml(s) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-// escAttr is identical in requirements — delegate to avoid duplication
 const escAttr = escHtml;
 
 // ── grid columns ──
@@ -441,7 +480,7 @@ function applyColumns() {
 
 function applyResponsiveCols() {
   const saved = localStorage.getItem(COLS_KEY);
-  if (saved && parseInt(saved) >= 1) return; // manual override active
+  if (saved && parseInt(saved) >= 1) return;
   const w    = window.innerWidth;
   const grid = document.getElementById('grid');
   if      (w <= 480)  grid.style.gridTemplateColumns = '1fr';
@@ -476,7 +515,6 @@ async function loadSettings() {
 }
 
 async function saveSettings() {
-  // persist columns to localStorage
   const colsRaw = document.getElementById('cfg-cols').value;
   const colsVal = colsRaw !== '' ? parseInt(colsRaw) : NaN;
   if (!isNaN(colsVal) && colsVal >= 1) {
@@ -506,7 +544,7 @@ async function saveSettings() {
 
 // ── poll ──
 async function poll() {
-  if (pollInFlight) return;          // skip if a request is already in-flight
+  if (pollInFlight) return;
   pollInFlight = true;
   try {
     const r = await fetch('/api/containers');
@@ -547,14 +585,14 @@ function updateStats(isChecking) {
   const unknown  = peers.filter(c => c.update_status === 'unknown').length;
   const checking = peers.filter(c => c.update_status === 'checking').length;
 
-  document.getElementById('s-total').textContent    = total;
-  document.getElementById('s-running').textContent  = running;
-  document.getElementById('s-updates').textContent  = updates;
-  document.getElementById('s-uptodate').textContent = uptodate;
-
   // During a scan show remaining (unknown + currently checking); after, just unknown
   const unknownDisplay = isChecking ? (unknown + checking) : unknown;
-  document.getElementById('s-unknown').textContent = unknownDisplay;
+
+  animateStat('s-total',    total);
+  animateStat('s-running',  running);
+  animateStat('s-updates',  updates);
+  animateStat('s-uptodate', uptodate);
+  animateStat('s-unknown',  unknownDisplay);
 
   const label = document.getElementById('s-unknown-label');
   label.textContent = isChecking ? 'Remaining' : 'Not checked';
@@ -569,7 +607,6 @@ function renderGrid() {
     c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q)
   );
 
-  // sort: updates first, then checking, then up-to-date, then unknown
   rows.sort((a, b) => {
     const order = s => s === 'update_available' ? 0 : s === 'checking' || s === 'updating' ? 1 : s === 'unknown' ? 3 : 2;
     const od = order(a.update_status) - order(b.update_status);
@@ -613,7 +650,6 @@ function renderGrid() {
          <button class="btn btn-success btn-sm" onclick="updateOne('${escAttr(c.name)}')"
            ${c.update_status !== 'update_available' ? 'disabled' : ''}>Update</button>`;
 
-    // card accent class
     let cardClass = 'card';
     if (c.is_self)                                   cardClass += ' is-self';
     else if (c.update_status === 'update_available') cardClass += ' has-update';
@@ -661,7 +697,6 @@ async function updateAll() {
   if (!updatable.length) return;
   if (!confirm(`Update ${updatable.length} container(s)? Each will be restarted.`)) return;
   toast(`Updating ${updatable.length} container(s)…`, 'info');
-  // Fire all updates in parallel
   await Promise.all(updatable.map(async c => {
     const r = await fetch('/api/update/' + encodeURIComponent(c.name), { method: 'POST' });
     const d = await r.json();
