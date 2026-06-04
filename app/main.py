@@ -1,318 +1,255 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import docker
 import threading
 import schedule
 import time
 import socket
 import logging
+import json
+import os
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.1.3"
+VERSION = "0.1.4"
 
 client = docker.from_env()
 
+SETTINGS_FILE = "/data/settings.json"
+
+DEFAULT_SETTINGS = {
+    "check_interval_minutes": 0,
+    "update_interval_minutes": 0,
+    "check_on_startup": True,
+}
+
+settings = dict(DEFAULT_SETTINGS)
+
+def load_settings():
+    global settings
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE) as f:
+                stored = json.load(f)
+                settings = {**DEFAULT_SETTINGS, **stored}
+                log.info("Settings loaded: %s", settings)
+        except Exception as e:
+            log.warning("Could not load settings: %s", e)
+    else:
+        settings = dict(DEFAULT_SETTINGS)
+
+def save_settings():
+    try:
+        os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)
+        with open(SETTINGS_FILE, "w") as f:
+            json.dump(settings, f, indent=2)
+    except Exception as e:
+        log.warning("Could not save settings: %s", e)
 
 def detect_self_name():
-    """Detect our own container name by matching hostname (container ID) against running containers."""
+    """Detect our own container name by matching hostname (container ID) to running containers."""
     try:
         hostname = socket.gethostname()
         for c in client.containers.list():
             if c.id.startswith(hostname) or hostname.startswith(c.short_id):
-                log.info("Self-detected container name: %s", c.name)
-                return c.name
+                name = c.name
+                log.info("Self-detected as container: %s", name)
+                return name
     except Exception as e:
-        log.warning("Could not auto-detect self name: %s", e)
-    return "dockwatch"
+        log.warning("Could not detect self: %s", e)
+    return None
 
+SELF_NAME = None
 
-SELF_NAME = detect_self_name()
+# --- state ---
+container_cache: dict = {}
+cache_lock = threading.Lock()
+checking_all = False
+updating_set: set = set()
 
-state = {
-    "containers": {},
-    "last_full_check": None,
-    "check_schedule": 0,
-    "update_schedule": 0,
-    "updating": [],
-    "checking": False,
-}
-state_lock = threading.Lock()
+def pull_check(container) -> dict:
+    """Check if a container has an update available. Returns status dict."""
+    try:
+        current_img = container.image
+        repo_tags = current_img.tags
+        if not repo_tags:
+            return {"status": "unknown", "reason": "no tag"}
+        tag = repo_tags[0]
+        pulled = client.images.pull(tag)
+        if pulled.id != current_img.id:
+            return {"status": "update_available"}
+        return {"status": "up_to_date"}
+    except Exception as e:
+        return {"status": "error", "reason": str(e)}
 
-
-# ---------------------------------------------------------------------------
-# Docker helpers
-# ---------------------------------------------------------------------------
-
-def get_running_containers():
+def get_containers():
+    """Return list of all containers with cached update status."""
+    try:
+        containers = client.containers.list(all=True)
+    except Exception as e:
+        log.error("Docker error: %s", e)
+        return []
     result = []
-    for c in client.containers.list():
-        if c.image.tags:
-            result.append(c)
+    with cache_lock:
+        for c in containers:
+            is_self = (c.name == SELF_NAME)
+            cached = container_cache.get(c.name, {})
+            result.append({
+                "id": c.short_id,
+                "name": c.name,
+                "image": c.image.tags[0] if c.image.tags else c.image.short_id,
+                "status": c.status,
+                "update_status": cached.get("status", "unknown"),
+                "update_reason": cached.get("reason", ""),
+                "is_self": is_self,
+                "checking": c.name in updating_set,
+            })
     return result
 
-
-def pull_latest_digest(image_tag: str):
-    try:
-        img = client.images.pull(image_tag)
-        digests = img.attrs.get("RepoDigests", [])
-        return digests[0] if digests else None
-    except Exception as e:
-        log.warning("Could not pull %s: %s", image_tag, e)
-        return None
-
-
-def current_digest(image_tag: str):
-    try:
-        img = client.images.get(image_tag)
-        digests = img.attrs.get("RepoDigests", [])
-        return digests[0] if digests else None
-    except Exception:
-        return None
-
-
-# ---------------------------------------------------------------------------
-# Check logic
-# ---------------------------------------------------------------------------
-
-def check_container(name: str, image_tag: str):
-    cur = current_digest(image_tag)
-    lat = pull_latest_digest(image_tag)
-    now = time.strftime("%Y-%m-%d %H:%M:%S")
-
-    if cur is None or lat is None:
-        status = "unknown"
-    elif cur == lat:
-        status = "up-to-date"
-    else:
-        status = "update-available"
-
-    with state_lock:
-        state["containers"][name] = {
-            "image": image_tag,
-            "current_digest": cur,
-            "latest_digest": lat,
-            "status": status,
-            "last_checked": now,
-        }
-
-
 def check_all():
-    with state_lock:
-        if state["checking"]:
-            return
-        state["checking"] = True
+    global checking_all
+    if checking_all:
+        return
+    checking_all = True
+    log.info("Checking all containers for updates...")
     try:
-        containers = get_running_containers()
-        threads = []
+        containers = client.containers.list(all=True)
         for c in containers:
-            image_tag = c.image.tags[0]
-            t = threading.Thread(
-                target=check_container, args=(c.name, image_tag), daemon=True
-            )
-            threads.append(t)
-            t.start()
-        for t in threads:
-            t.join()
-        with state_lock:
-            state["last_full_check"] = time.strftime("%Y-%m-%d %H:%M:%S")
+            result = pull_check(c)
+            with cache_lock:
+                container_cache[c.name] = result
+    except Exception as e:
+        log.error("check_all error: %s", e)
     finally:
-        with state_lock:
-            state["checking"] = False
+        checking_all = False
+    log.info("Check complete.")
 
-
-# ---------------------------------------------------------------------------
-# Update logic
-# ---------------------------------------------------------------------------
-
-def update_container(name: str):
-    if name == SELF_NAME:
-        log.warning("Skipping self-update of %s", name)
-        return {"ok": False, "error": "Cannot update dockwatch while it is running."}
-
-    with state_lock:
-        if name not in state["containers"]:
-            return {"ok": False, "error": "Container not found in state."}
-        state["updating"].append(name)
-
+def check_one(name):
     try:
-        containers = {c.name: c for c in client.containers.list()}
-        c = containers.get(name)
-        if not c:
-            return {"ok": False, "error": "Container not running."}
+        c = client.containers.get(name)
+        result = pull_check(c)
+        with cache_lock:
+            container_cache[name] = result
+    except Exception as e:
+        with cache_lock:
+            container_cache[name] = {"status": "error", "reason": str(e)}
 
-        image_tag = c.image.tags[0]
-
-        log.info("Pulling %s for %s", image_tag, name)
-        client.images.pull(image_tag)
-
-        attrs = c.attrs
-        host_config = attrs["HostConfig"]
-        config = attrs["Config"]
-
-        log.info("Stopping %s", name)
-        c.stop(timeout=30)
+def update_one(name):
+    if name == SELF_NAME:
+        log.warning("Refusing to update self (%s)", name)
+        return {"ok": False, "error": "Cannot update self while running."}
+    try:
+        c = client.containers.get(name)
+        img_tag = c.image.tags[0] if c.image.tags else None
+        if not img_tag:
+            return {"ok": False, "error": "No image tag found."}
+        client.images.pull(img_tag)
+        c.stop()
         c.remove()
-
-        log.info("Recreating %s", name)
-        new_c = client.containers.run(
-            image_tag,
+        # Recreate with same config
+        attrs = c.attrs["HostConfig"]
+        client.containers.run(
+            img_tag,
             detach=True,
             name=name,
-            hostname=config.get("Hostname", name),
-            restart_policy=host_config.get("RestartPolicy", {"Name": "unless-stopped"}),
-            environment=config.get("Env", []),
-            ports=host_config.get("PortBindings", {}),
-            binds=host_config.get("Binds"),
-            network_mode=host_config.get("NetworkMode", "bridge"),
+            restart_policy=attrs.get("RestartPolicy"),
         )
-        log.info("Started %s as %s", name, new_c.id[:12])
-
-        check_container(name, image_tag)
+        with cache_lock:
+            container_cache[name] = {"status": "up_to_date"}
         return {"ok": True}
-
     except Exception as e:
-        log.error("Error updating %s: %s", name, e)
         return {"ok": False, "error": str(e)}
-    finally:
-        with state_lock:
-            if name in state["updating"]:
-                state["updating"].remove(name)
 
-
-def update_all():
-    with state_lock:
-        targets = [
-            name for name, info in state["containers"].items()
-            if info["status"] == "update-available" and name != SELF_NAME
-        ]
-    for name in targets:
-        update_container(name)
-
-
-# ---------------------------------------------------------------------------
-# Scheduler
-# ---------------------------------------------------------------------------
+# ---- scheduler ----
+scheduler_thread_stop = threading.Event()
 
 def run_scheduler():
-    while True:
+    while not scheduler_thread_stop.is_set():
         schedule.run_pending()
-        time.sleep(30)
+        time.sleep(10)
 
+check_job = None
+update_job = None
 
-def setup_schedules():
+def apply_schedules():
+    global check_job, update_job
     schedule.clear()
+    check_job = None
+    update_job = None
+    ci = settings.get("check_interval_minutes", 0)
+    ui = settings.get("update_interval_minutes", 0)
+    if ci and ci > 0:
+        check_job = schedule.every(ci).minutes.do(lambda: threading.Thread(target=check_all, daemon=True).start())
+        log.info("Check schedule: every %s minutes", ci)
+    if ui and ui > 0:
+        def auto_update():
+            containers = client.containers.list()
+            for c in containers:
+                if c.name == SELF_NAME:
+                    continue
+                with cache_lock:
+                    s = container_cache.get(c.name, {}).get("status")
+                if s == "update_available":
+                    log.info("Auto-updating %s", c.name)
+                    update_one(c.name)
+        update_job = schedule.every(ui).minutes.do(lambda: threading.Thread(target=auto_update, daemon=True).start())
+        log.info("Auto-update schedule: every %s minutes", ui)
 
-    check_interval = state["check_schedule"]
-    if check_interval and int(check_interval) > 0:
-        schedule.every(int(check_interval)).minutes.do(
-            lambda: threading.Thread(target=check_all, daemon=True).start()
-        )
-        log.info("Check schedule: every %d minutes", check_interval)
-    else:
-        log.info("Check schedule: disabled")
-
-    update_interval = state["update_schedule"]
-    if update_interval and int(update_interval) > 0:
-        schedule.every(int(update_interval)).minutes.do(
-            lambda: threading.Thread(target=update_all, daemon=True).start()
-        )
-        log.info("Auto-update schedule: every %d minutes", update_interval)
-    else:
-        log.info("Auto-update schedule: disabled")
-
-
-# ---------------------------------------------------------------------------
-# API routes
-# ---------------------------------------------------------------------------
+# ---- routes ----
 
 @app.route("/")
 def index():
-    return render_template("index.html", version=VERSION, self_name=SELF_NAME)
+    return render_template("index.html", version=VERSION)
 
+@app.route("/api/containers")
+def api_containers():
+    return jsonify({"containers": get_containers(), "checking_all": checking_all})
 
-@app.route("/api/state")
-def api_state():
-    with state_lock:
-        return jsonify({
-            "containers": state["containers"],
-            "last_full_check": state["last_full_check"],
-            "check_schedule": state["check_schedule"],
-            "update_schedule": state["update_schedule"],
-            "checking": state["checking"],
-            "updating": state["updating"],
-            "self_name": SELF_NAME,
-        })
-
-
-@app.route("/api/check", methods=["POST"])
-def api_check():
-    data = request.get_json(silent=True) or {}
-    name = data.get("name")
-    if name:
-        with state_lock:
-            info = state["containers"].get(name)
-        if not info:
-            for c in get_running_containers():
-                if c.name == name:
-                    threading.Thread(
-                        target=check_container, args=(name, c.image.tags[0]), daemon=True
-                    ).start()
-                    return jsonify({"ok": True, "message": f"Checking {name}"})
-            return jsonify({"ok": False, "error": "Container not found"}), 404
-        threading.Thread(
-            target=check_container, args=(name, info["image"]), daemon=True
-        ).start()
-        return jsonify({"ok": True, "message": f"Checking {name}"})
-    else:
-        with state_lock:
-            already = state["checking"]
-        if already:
-            return jsonify({"ok": False, "error": "Check already in progress"}), 409
-        threading.Thread(target=check_all, daemon=True).start()
-        return jsonify({"ok": True, "message": "Checking all containers"})
-
-
-@app.route("/api/update", methods=["POST"])
-def api_update():
-    data = request.get_json(silent=True) or {}
-    name = data.get("name")
-    if name:
-        if name == SELF_NAME:
-            return jsonify({"ok": False, "error": "Cannot update dockwatch while it is running."}), 403
-        threading.Thread(target=update_container, args=(name,), daemon=True).start()
-        return jsonify({"ok": True, "message": f"Updating {name}"})
-    else:
-        threading.Thread(target=update_all, daemon=True).start()
-        return jsonify({"ok": True, "message": "Updating all eligible containers"})
-
-
-@app.route("/api/schedule", methods=["POST"])
-def api_schedule():
-    data = request.get_json(silent=True) or {}
-    check_mins  = data.get("check_schedule")
-    update_mins = data.get("update_schedule")
-
-    if check_mins is not None:
-        with state_lock:
-            state["check_schedule"] = int(check_mins) if str(check_mins).strip() else 0
-    if update_mins is not None:
-        with state_lock:
-            state["update_schedule"] = int(update_mins) if str(update_mins).strip() else 0
-
-    setup_schedules()
+@app.route("/api/check/all", methods=["POST"])
+def api_check_all():
+    threading.Thread(target=check_all, daemon=True).start()
     return jsonify({"ok": True})
 
+@app.route("/api/check/<name>", methods=["POST"])
+def api_check_one(name):
+    threading.Thread(target=check_one, args=(name,), daemon=True).start()
+    return jsonify({"ok": True})
 
-# ---------------------------------------------------------------------------
-# Boot — runs whether started via Gunicorn or directly
-# ---------------------------------------------------------------------------
+@app.route("/api/update/<name>", methods=["POST"])
+def api_update_one(name):
+    if name == SELF_NAME:
+        return jsonify({"ok": False, "error": "Cannot update self while running."}), 403
+    result = update_one(name)
+    return jsonify(result)
 
-setup_schedules()
-threading.Thread(target=run_scheduler, daemon=True).start()
-threading.Thread(target=check_all, daemon=True).start()
-log.info("Startup scan initiated.")
+@app.route("/api/settings", methods=["GET"])
+def api_get_settings():
+    return jsonify(settings)
+
+@app.route("/api/settings", methods=["POST"])
+def api_save_settings():
+    global settings
+    data = request.get_json(force=True)
+    settings["check_interval_minutes"] = int(data.get("check_interval_minutes") or 0)
+    settings["update_interval_minutes"] = int(data.get("update_interval_minutes") or 0)
+    settings["check_on_startup"] = bool(data.get("check_on_startup", True))
+    save_settings()
+    apply_schedules()
+    return jsonify({"ok": True, "settings": settings})
+
+# ---- startup ----
+def startup():
+    global SELF_NAME
+    load_settings()
+    SELF_NAME = detect_self_name()
+    apply_schedules()
+    threading.Thread(target=run_scheduler, daemon=True).start()
+    if settings.get("check_on_startup", True):
+        log.info("check_on_startup enabled — scanning now...")
+        threading.Thread(target=check_all, daemon=True).start()
+
+startup()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8093, debug=False)

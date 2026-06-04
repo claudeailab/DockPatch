@@ -8,522 +8,561 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #0f1117;
-      --surface:   #1a1d27;
-      --border:    #2a2d3a;
-      --accent:    #3b82f6;
-      --green:     #22c55e;
-      --yellow:    #f59e0b;
-      --red:       #ef4444;
-      --muted:     #6b7280;
-      --text:      #e5e7eb;
-      --text-sub:  #9ca3af;
-      --radius:    10px;
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --surface2: #21253300;
+      --border:   #2a2d3a;
+      --accent:   #3b82f6;
+      --green:    #22c55e;
+      --yellow:   #f59e0b;
+      --red:      #ef4444;
+      --muted:    #6b7280;
+      --text:     #e2e8f0;
+      --radius:   8px;
     }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
       min-height: 100vh;
     }
 
-    /* ── Header ── */
+    /* ── header ── */
     header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      height: 52px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      flex-wrap: wrap;
-      gap: .75rem;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .brand { display: flex; align-items: center; gap: .6rem; }
-    .brand svg { width: 28px; height: 28px; }
-    .brand h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -.5px; }
-    .version { font-size: .7rem; color: var(--muted); align-self: flex-end; margin-bottom: 1px; }
+    .logo { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .logo span { font-size: 20px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
 
-    .header-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
-
-    /* ── Buttons ── */
-    button {
-      cursor: pointer;
-      border: none;
-      border-radius: 6px;
-      font-size: .85rem;
-      font-weight: 600;
-      padding: .45rem .9rem;
-      transition: opacity .15s, background .15s;
-    }
-    button:disabled { opacity: .45; cursor: not-allowed; }
-    .btn-primary  { background: var(--accent); color: #fff; }
-    .btn-success  { background: var(--green);  color: #fff; }
-    .btn-warning  { background: var(--yellow); color: #000; }
-    .btn-danger   { background: var(--red);    color: #fff; }
-    .btn-ghost    { background: var(--border); color: var(--text); }
-    button:not(:disabled):hover { opacity: .85; }
-
-    /* ── Main layout ── */
-    main { padding: 1.25rem 1.5rem; max-width: 1200px; margin: 0 auto; }
-
-    /* ── Status bar ── */
-    .status-bar {
-      display: flex;
+    /* ── checking banner ── */
+    #checking-banner {
+      display: none;
+      background: linear-gradient(90deg, #1e3a5f, #1a2d4a);
+      border-bottom: 1px solid #2d5a8e;
+      padding: 8px 20px;
       align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-bottom: 1.25rem;
-      padding: .75rem 1rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      font-size: .82rem;
-      color: var(--text-sub);
+      gap: 10px;
+      font-size: 13px;
+      color: #93c5fd;
     }
-    .status-bar .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      display: inline-block; margin-right: .3rem;
+    #checking-banner.visible { display: flex; }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid #3b82f640;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
     }
-    .dot-green  { background: var(--green); }
-    .dot-yellow { background: var(--yellow); animation: pulse 1.2s infinite; }
-    .dot-muted  { background: var(--muted); }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: .3; }
-    }
-
-    /* ── Schedule panel ── */
-    .schedule-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1rem;
-      margin-bottom: 1.25rem;
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      align-items: flex-end;
-    }
-    .schedule-panel label { font-size: .78rem; color: var(--text-sub); display: block; margin-bottom: .25rem; }
-    .schedule-panel input {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      padding: .4rem .65rem;
-      font-size: .85rem;
-      width: 100%;
-    }
-    .schedule-panel input:focus { outline: 2px solid var(--accent); }
-    .sched-field { flex: 1; min-width: 140px; }
-
-    /* ── Summary cards ── */
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: .75rem;
-      margin-bottom: 1.25rem;
-    }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: .85rem 1rem;
-      text-align: center;
-    }
-    .card .num { font-size: 2rem; font-weight: 700; line-height: 1; }
-    .card .lbl { font-size: .72rem; color: var(--text-sub); margin-top: .25rem; text-transform: uppercase; letter-spacing: .05em; }
-    .num-green  { color: var(--green); }
-    .num-yellow { color: var(--yellow); }
-    .num-muted  { color: var(--muted); }
-    .num-blue   { color: var(--accent); }
-
-    /* ── Table ── */
-    .table-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .banner-bar {
+      flex: 1;
+      height: 3px;
+      background: #1e3a5f;
+      border-radius: 2px;
       overflow: hidden;
     }
-    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
-    thead { background: var(--bg); }
+    .banner-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      border-radius: 2px;
+      animation: indeterminate 1.5s ease-in-out infinite;
+      width: 40%;
+    }
+    @keyframes indeterminate {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+
+    /* ── main layout ── */
+    main {
+      padding: 16px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ── summary row ── */
+    .summary {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 130px;
+    }
+    .stat-icon { font-size: 20px; }
+    .stat-val { font-size: 20px; font-weight: 700; line-height: 1; }
+    .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .toolbar-left { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+    input[type="text"] {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 13px;
+      width: 200px;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: var(--accent); }
+
+    /* ── buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: opacity .15s, filter .15s;
+      white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) { filter: brightness(1.15); }
+    .btn:disabled { opacity: .45; cursor: default; }
+    .btn-primary  { background: var(--accent); color: #fff; }
+    .btn-ghost    { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); filter: none; }
+    .btn-success  { background: #16803c; color: #fff; }
+    .btn-danger   { background: #991b1b; color: #fff; }
+    .btn-sm       { padding: 4px 9px; font-size: 12px; }
+    .btn-settings { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+    .btn-settings:hover { color: var(--text); filter: none; }
+    .btn-settings.active { border-color: var(--accent); color: var(--accent); }
+
+    /* ── table ── */
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #12151f; }
     th {
       text-align: left;
-      padding: .65rem 1rem;
-      font-size: .72rem;
+      padding: 9px 12px;
+      font-size: 11px;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: .06em;
-      color: var(--text-sub);
+      letter-spacing: .05em;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    th:hover { color: var(--text); }
+    td {
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:hover td { background: #ffffff08; }
+    .name-cell { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .self-badge {
+      font-size: 10px;
+      background: #312e81;
+      color: #a5b4fc;
+      padding: 1px 5px;
+      border-radius: 4px;
       font-weight: 600;
     }
-    tbody tr {
-      border-top: 1px solid var(--border);
-      transition: background .1s;
-    }
-    tbody tr:hover { background: rgba(255,255,255,.025); }
-    td { padding: .65rem 1rem; vertical-align: middle; }
+    .image-cell { color: var(--muted); font-size: 12px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .actions { display: flex; gap: 5px; justify-content: flex-end; flex-wrap: wrap; }
+    .self-lock { font-size: 13px; color: var(--muted); padding: 4px 6px; }
 
+    /* ── badges ── */
     .badge {
       display: inline-flex;
       align-items: center;
-      gap: .3rem;
-      padding: .25rem .6rem;
-      border-radius: 999px;
-      font-size: .72rem;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
       font-weight: 600;
+      white-space: nowrap;
     }
-    .badge-green  { background: rgba(34,197,94,.15);  color: var(--green); }
-    .badge-yellow { background: rgba(245,158,11,.15); color: var(--yellow); }
-    .badge-muted  { background: rgba(107,114,128,.15);color: var(--muted); }
-    .badge-blue   { background: rgba(59,130,246,.15); color: var(--accent); }
-    .badge-red    { background: rgba(239,68,68,.15);  color: var(--red); }
+    .badge-running   { background: #14532d40; color: var(--green); border: 1px solid #166534; }
+    .badge-exited    { background: #7f1d1d40; color: var(--red);   border: 1px solid #991b1b; }
+    .badge-paused    { background: #78350f40; color: var(--yellow); border: 1px solid #92400e; }
+    .badge-other     { background: #1e293b;   color: var(--muted);  border: 1px solid var(--border); }
+    .badge-uptodate  { background: #14532d40; color: var(--green); border: 1px solid #166534; }
+    .badge-available { background: #78350f40; color: var(--yellow); border: 1px solid #92400e; }
+    .badge-unknown   { background: #1e293b;   color: var(--muted);  border: 1px solid var(--border); }
+    .badge-error     { background: #7f1d1d40; color: var(--red);   border: 1px solid #991b1b; }
+    .badge-checking  { background: #1e3a5f40; color: #93c5fd; border: 1px solid #2d5a8e; }
 
-    .image-name { font-family: monospace; font-size: .78rem; color: var(--text-sub); word-break: break-all; }
-    .self-label { font-size: .68rem; color: var(--muted); font-style: italic; margin-left: .4rem; }
-    .actions-cell { display: flex; gap: .4rem; flex-wrap: wrap; }
-
-    /* ── Empty / loading ── */
-    .empty {
-      text-align: center;
-      padding: 3rem 1rem;
-      color: var(--muted);
-      font-size: .9rem;
+    /* ── settings panel ── */
+    #settings-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: flex-end;
     }
-    .spinner {
-      width: 36px; height: 36px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
+    #settings-panel.open { display: flex; }
+    .setting-group { display: flex; flex-direction: column; gap: 4px; }
+    .setting-group label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    .setting-group input[type="number"] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 13px;
+      width: 130px;
+      outline: none;
+    }
+    .setting-group input[type="number"]:focus { border-color: var(--accent); }
+    .setting-hint { font-size: 11px; color: var(--muted); }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toggle-row label { font-size: 13px; color: var(--text); text-transform: none; letter-spacing: 0; }
+    /* toggle switch */
+    .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: var(--border);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .slider:before {
+      content: "";
+      position: absolute;
+      width: 14px; height: 14px;
+      left: 3px; top: 3px;
+      background: #fff;
       border-radius: 50%;
-      animation: spin .8s linear infinite;
-      margin: 0 auto 1rem;
+      transition: transform .2s;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider:before { transform: translateX(16px); }
+    .settings-actions { display: flex; gap: 8px; align-items: flex-end; padding-bottom: 0; }
 
-    /* ── Toast ── */
+    /* ── toast ── */
     #toast-container {
       position: fixed;
-      bottom: 1.25rem;
-      right: 1.25rem;
+      bottom: 20px;
+      right: 20px;
       display: flex;
       flex-direction: column;
-      gap: .5rem;
-      z-index: 9999;
+      gap: 8px;
+      z-index: 999;
     }
     .toast {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-left: 4px solid var(--accent);
-      border-radius: 8px;
-      padding: .65rem 1rem;
-      font-size: .82rem;
-      max-width: 320px;
-      box-shadow: 0 4px 20px rgba(0,0,0,.4);
-      animation: slide-in .2s ease;
-    }
-    .toast.success { border-left-color: var(--green); }
-    .toast.error   { border-left-color: var(--red); }
-    @keyframes slide-in {
-      from { transform: translateX(30px); opacity: 0; }
-      to   { transform: translateX(0);    opacity: 1; }
-    }
-
-    /* ── Self-update warning banner ── */
-    .self-warning {
-      background: rgba(245,158,11,.1);
-      border: 1px solid rgba(245,158,11,.3);
       border-radius: var(--radius);
-      padding: .65rem 1rem;
-      font-size: .8rem;
-      color: var(--yellow);
-      margin-bottom: 1.25rem;
-      display: flex;
-      align-items: center;
-      gap: .5rem;
+      padding: 10px 16px;
+      font-size: 13px;
+      animation: slideIn .2s ease;
+      max-width: 320px;
     }
+    .toast.success { border-left: 3px solid var(--green); }
+    .toast.error   { border-left: 3px solid var(--red); }
+    .toast.info    { border-left: 3px solid var(--accent); }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ── Responsive ── */
+    /* ── version ── */
+    .version { font-size: 11px; color: var(--muted); }
+
+    /* ── empty ── */
+    .empty { text-align: center; padding: 40px; color: var(--muted); }
+
+    /* ── mobile ── */
     @media (max-width: 640px) {
-      th.hide-sm, td.hide-sm { display: none; }
-      .actions-cell { gap: .3rem; }
-      button { padding: .4rem .7rem; font-size: .78rem; }
+      main { padding: 12px; }
+      .stat { min-width: 100px; padding: 8px 12px; }
+      .stat-val { font-size: 18px; }
+      .image-cell { display: none; }
+      th.hide-mobile, td.hide-mobile { display: none; }
+      input[type="text"] { width: 140px; }
+      .setting-group input[type="number"] { width: 110px; }
     }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="brand">
-    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="50" height="50" rx="10" fill="#1a1d27"/>
-      <path d="M8 26c0-4 3-7 8-7h18c3 0 6 2 7 5 1 0 7 0 7-6H6c0 4.5 2 8 2 8z" fill="#3b82f6"/>
-      <rect x="10" y="17" width="6" height="5" rx="1" fill="#3b82f6"/>
-      <rect x="18" y="17" width="6" height="5" rx="1" fill="#3b82f6"/>
-      <rect x="26" y="17" width="6" height="5" rx="1" fill="#3b82f6"/>
-      <rect x="18" y="10" width="6" height="5" rx="1" fill="#3b82f6"/>
-      <rect x="26" y="10" width="6" height="5" rx="1" fill="#3b82f6"/>
-    </svg>
-    <h1>Dockwatch</h1>
+  <div class="logo"><span>🐳</span> Dockwatch</div>
+  <div class="header-right">
+    <button class="btn btn-settings btn-sm" id="settings-btn" onclick="toggleSettings()">⚙ Settings</button>
     <span class="version">v{{ version }}</span>
-  </div>
-  <div class="header-actions">
-    <button class="btn-ghost" id="btn-check-all">🔍 Check All</button>
-    <button class="btn-success" id="btn-update-all">⬆ Update All</button>
   </div>
 </header>
 
+<div id="checking-banner">
+  <div class="spinner"></div>
+  <span>Scanning containers for updates…</span>
+  <div class="banner-bar"><div class="banner-bar-fill"></div></div>
+</div>
+
 <main>
 
-  <div class="self-warning">
-    ⚠️ <strong>dockwatch</strong> will never update itself automatically — update it manually to avoid interruption.
-  </div>
-
-  <!-- Status bar -->
-  <div class="status-bar" id="status-bar">
-    <span id="status-text"><span class="dot dot-muted"></span>Loading…</span>
-    <span id="last-check-text"></span>
-    <span id="schedule-text"></span>
-  </div>
-
-  <!-- Schedule config -->
-  <div class="schedule-panel">
-    <div class="sched-field">
-      <label>Check interval (minutes)</label>
-      <input type="number" id="inp-check-interval" min="1" placeholder="60" />
-    </div>
-    <div class="sched-field">
-      <label>Auto-update every (minutes, 0 or blank to disable)</label>
-      <input type="number" id="inp-update-interval" min="0" placeholder="0" />
-    </div>
-    <button class="btn-primary" id="btn-save-schedule">💾 Save Schedule</button>
-  </div>
-
-  <!-- Summary cards -->
+  <!-- summary -->
   <div class="summary">
-    <div class="card">
-      <div class="num num-blue" id="sum-total">–</div>
-      <div class="lbl">Containers</div>
+    <div class="stat">
+      <span class="stat-icon">📦</span>
+      <div><div class="stat-val" id="s-total">—</div><div class="stat-label">Total</div></div>
     </div>
-    <div class="card">
-      <div class="num num-green" id="sum-uptodate">–</div>
-      <div class="lbl">Up to date</div>
+    <div class="stat">
+      <span class="stat-icon">🟢</span>
+      <div><div class="stat-val" id="s-running">—</div><div class="stat-label">Running</div></div>
     </div>
-    <div class="card">
-      <div class="num num-yellow" id="sum-updates">–</div>
-      <div class="lbl">Updates available</div>
+    <div class="stat">
+      <span class="stat-icon">⬆️</span>
+      <div><div class="stat-val" id="s-updates">—</div><div class="stat-label">Updates</div></div>
     </div>
-    <div class="card">
-      <div class="num num-muted" id="sum-unknown">–</div>
-      <div class="lbl">Unknown</div>
+    <div class="stat">
+      <span class="stat-icon">✅</span>
+      <div><div class="stat-val" id="s-uptodate">—</div><div class="stat-label">Up to date</div></div>
     </div>
   </div>
 
-  <!-- Container table -->
+  <!-- settings panel -->
+  <div id="settings-panel">
+    <div class="setting-group">
+      <label>Check Interval</label>
+      <input type="number" id="cfg-check" min="0" placeholder="0 = off">
+      <span class="setting-hint">minutes (0 = off)</span>
+    </div>
+    <div class="setting-group">
+      <label>Auto-update Interval</label>
+      <input type="number" id="cfg-update" min="0" placeholder="0 = off">
+      <span class="setting-hint">minutes (0 = off)</span>
+    </div>
+    <div class="setting-group">
+      <label>Startup</label>
+      <div class="toggle-row">
+        <label class="switch">
+          <input type="checkbox" id="cfg-startup">
+          <span class="slider"></span>
+        </label>
+        <label for="cfg-startup">Check for updates on start</label>
+      </div>
+    </div>
+    <div class="settings-actions">
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleSettings()">Close</button>
+    </div>
+  </div>
+
+  <!-- toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <input type="text" id="search" placeholder="🔍 Filter containers…" oninput="renderTable()">
+      <button class="btn btn-primary btn-sm" id="check-all-btn" onclick="checkAll()">🔍 Check all</button>
+    </div>
+  </div>
+
+  <!-- table -->
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>Container</th>
-          <th class="hide-sm">Image</th>
-          <th>Status</th>
-          <th class="hide-sm">Last checked</th>
-          <th>Actions</th>
+          <th onclick="sortBy('name')">Name</th>
+          <th onclick="sortBy('image')" class="hide-mobile">Image</th>
+          <th onclick="sortBy('status')">State</th>
+          <th onclick="sortBy('update_status')">Update</th>
+          <th style="text-align:right">Actions</th>
         </tr>
       </thead>
-      <tbody id="container-tbody">
-        <tr><td colspan="5"><div class="empty"><div class="spinner"></div>Loading containers…</div></td></tr>
-      </tbody>
+      <tbody id="tbody"></tbody>
     </table>
   </div>
+
 </main>
 
 <div id="toast-container"></div>
 
 <script>
-  const SELF = "{{ self_name }}";
-  let appState = {};
+let containers = [];
+let sortKey = 'name';
+let sortDir = 1;
+let settingsOpen = false;
+let wasChecking = false;
 
-  // ── Toast ──────────────────────────────────────────────────
-  function toast(msg, type = "info") {
-    const el = document.createElement("div");
-    el.className = `toast ${type}`;
-    el.textContent = msg;
-    document.getElementById("toast-container").appendChild(el);
-    setTimeout(() => el.remove(), 4000);
-  }
+function toggleSettings() {
+  settingsOpen = !settingsOpen;
+  document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
+  document.getElementById('settings-btn').classList.toggle('active', settingsOpen);
+  if (settingsOpen) loadSettings();
+}
 
-  // ── Fetch state from API ───────────────────────────────────
-  async function fetchState() {
-    try {
-      const res = await fetch("/api/state");
-      if (!res.ok) throw new Error(res.statusText);
-      appState = await res.json();
-      renderUI(appState);
-    } catch (e) {
-      document.getElementById("status-text").innerHTML =
-        `<span class="dot dot-muted"></span>Error reaching server`;
-    }
-  }
+async function loadSettings() {
+  const r = await fetch('/api/settings');
+  const d = await r.json();
+  document.getElementById('cfg-check').value   = d.check_interval_minutes || '';
+  document.getElementById('cfg-update').value  = d.update_interval_minutes || '';
+  document.getElementById('cfg-startup').checked = !!d.check_on_startup;
+}
 
-  // ── Render ─────────────────────────────────────────────────
-  function renderUI(s) {
-    // Status bar
-    const statusText = document.getElementById("status-text");
-    if (s.checking) {
-      statusText.innerHTML = `<span class="dot dot-yellow"></span>Checking for updates…`;
-    } else if (s.updating.length > 0) {
-      statusText.innerHTML = `<span class="dot dot-yellow"></span>Updating: ${s.updating.join(", ")}`;
+async function saveSettings() {
+  const payload = {
+    check_interval_minutes:  parseInt(document.getElementById('cfg-check').value)  || 0,
+    update_interval_minutes: parseInt(document.getElementById('cfg-update').value) || 0,
+    check_on_startup:        document.getElementById('cfg-startup').checked,
+  };
+  const r = await fetch('/api/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  const d = await r.json();
+  if (d.ok) toast('Settings saved', 'success');
+  else toast('Failed to save settings', 'error');
+}
+
+async function poll() {
+  try {
+    const r = await fetch('/api/containers');
+    const d = await r.json();
+    containers = d.containers;
+    const isChecking = d.checking_all;
+
+    const banner = document.getElementById('checking-banner');
+    if (isChecking) {
+      banner.classList.add('visible');
     } else {
-      statusText.innerHTML = `<span class="dot dot-green"></span>Idle`;
+      if (wasChecking && !isChecking) {
+        toast('Update check complete', 'success');
+      }
+      banner.classList.remove('visible');
     }
+    wasChecking = isChecking;
 
-    const lc = document.getElementById("last-check-text");
-    lc.textContent = s.last_full_check ? `Last check: ${s.last_full_check}` : "Not checked yet";
+    document.getElementById('check-all-btn').disabled = isChecking;
+    updateStats();
+    renderTable();
+  } catch(e) { console.error(e); }
+}
 
-    const st = document.getElementById("schedule-text");
-    const autoUp = s.update_schedule && parseInt(s.update_schedule) > 0
-      ? `Auto-update: every ${s.update_schedule}m`
-      : "Auto-update: off";
-    st.textContent = `Check every ${s.check_schedule}m · ${autoUp}`;
+function updateStats() {
+  document.getElementById('s-total').textContent   = containers.length;
+  document.getElementById('s-running').textContent = containers.filter(c => c.status === 'running').length;
+  document.getElementById('s-updates').textContent = containers.filter(c => c.update_status === 'update_available').length;
+  document.getElementById('s-uptodate').textContent= containers.filter(c => c.update_status === 'up_to_date').length;
+}
 
-    // Schedule inputs (only update if not focused)
-    const inpInterval = document.getElementById("inp-check-interval");
-    const inpUpdate   = document.getElementById("inp-update-interval");
-    if (document.activeElement !== inpInterval) inpInterval.value = s.check_schedule;
-    if (document.activeElement !== inpUpdate)   inpUpdate.value   = s.update_schedule || 0;
+function sortBy(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = 1; }
+  renderTable();
+}
 
-    // Summary
-    const containers = s.containers;
-    const names = Object.keys(containers);
-    const upToDate = names.filter(n => containers[n].status === "up-to-date").length;
-    const updates  = names.filter(n => containers[n].status === "update-available").length;
-    const unknown  = names.filter(n => containers[n].status === "unknown").length;
-
-    document.getElementById("sum-total").textContent    = names.length;
-    document.getElementById("sum-uptodate").textContent = upToDate;
-    document.getElementById("sum-updates").textContent  = updates;
-    document.getElementById("sum-unknown").textContent  = unknown;
-
-    document.getElementById("btn-update-all").disabled = updates === 0 || s.updating.length > 0;
-    document.getElementById("btn-check-all").disabled  = s.checking;
-
-    // Table
-    const tbody = document.getElementById("container-tbody");
-    if (names.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty">${
-        s.checking
-          ? '<div class="spinner"></div>Scanning containers…'
-          : 'No containers found. Try clicking Check All.'
-      }</div></td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = names.sort().map(name => {
-      const info = containers[name];
-      const isSelf    = name === SELF;
-      const isUpdating = s.updating.includes(name);
-
-      const statusBadge = badgeForStatus(info.status, isUpdating);
-
-      const checkBtn = `<button class="btn-ghost" onclick="checkOne('${name}')" ${s.checking ? "disabled" : ""}>
-        🔍 Check
-      </button>`;
-
-      const updateBtn = isSelf
-        ? `<span class="self-label">🔒 self</span>`
-        : `<button class="btn-warning" onclick="updateOne('${name}')"
-            ${isUpdating || info.status !== 'update-available' ? 'disabled' : ''}>
-            ⬆ Update
-          </button>`;
-
-      return `
-        <tr>
-          <td><strong>${name}</strong>${isSelf ? '<span class="self-label">(this app)</span>' : ''}</td>
-          <td class="hide-sm"><span class="image-name">${info.image}</span></td>
-          <td>${statusBadge}</td>
-          <td class="hide-sm">${info.last_checked || '–'}</td>
-          <td><div class="actions-cell">${checkBtn}${updateBtn}</div></td>
-        </tr>`;
-    }).join("");
-  }
-
-  function badgeForStatus(status, isUpdating) {
-    if (isUpdating)
-      return `<span class="badge badge-blue"><span class="dot dot-yellow"></span>Updating…</span>`;
-    switch (status) {
-      case "up-to-date":
-        return `<span class="badge badge-green">✓ Up to date</span>`;
-      case "update-available":
-        return `<span class="badge badge-yellow">⬆ Update available</span>`;
-      default:
-        return `<span class="badge badge-muted">? Unknown</span>`;
-    }
-  }
-
-  // ── Actions ────────────────────────────────────────────────
-  async function checkOne(name) {
-    try {
-      await fetch("/api/check", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({name})
-      });
-      toast(`Checking ${name}…`);
-    } catch(e) { toast("Request failed", "error"); }
-  }
-
-  async function updateOne(name) {
-    if (name === SELF) { toast("Cannot update dockwatch itself.", "error"); return; }
-    try {
-      const res = await fetch("/api/update", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({name})
-      });
-      const j = await res.json();
-      if (j.ok) toast(`Updating ${name}…`, "success");
-      else toast(j.error, "error");
-    } catch(e) { toast("Request failed", "error"); }
-  }
-
-  document.getElementById("btn-check-all").addEventListener("click", async () => {
-    try {
-      const res = await fetch("/api/check", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
-      const j = await res.json();
-      if (j.ok) toast("Checking all containers…");
-      else toast(j.error, "error");
-    } catch(e) { toast("Request failed", "error"); }
+function renderTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let rows = containers.filter(c => c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q));
+  rows.sort((a, b) => {
+    const av = a[sortKey] || '';
+    const bv = b[sortKey] || '';
+    return av < bv ? -sortDir : av > bv ? sortDir : 0;
   });
 
-  document.getElementById("btn-update-all").addEventListener("click", async () => {
-    if (!confirm("Update all containers with available updates? (dockwatch itself will be skipped)")) return;
-    try {
-      const res = await fetch("/api/update", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
-      const j = await res.json();
-      if (j.ok) toast("Updating all eligible containers…", "success");
-      else toast(j.error, "error");
-    } catch(e) { toast("Request failed", "error"); }
-  });
+  const tbody = document.getElementById('tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No containers found</td></tr>';
+    return;
+  }
 
-  document.getElementById("btn-save-schedule").addEventListener("click", async () => {
-    const checkMins  = parseInt(document.getElementById("inp-check-interval").value);
-    const updateMins = parseInt(document.getElementById("inp-update-interval").value) || 0;
-    if (isNaN(checkMins) || checkMins < 1) { toast("Enter a valid check interval (minutes)", "error"); return; }
-    try {
-      const res = await fetch("/api/schedule", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({check_schedule: checkMins, update_schedule: updateMins})
-      });
-      const j = await res.json();
-      if (j.ok) toast("Schedule saved.", "success");
-    } catch(e) { toast("Request failed", "error"); }
-  });
+  tbody.innerHTML = rows.map(c => {
+    const stateBadge = {
+      running: '<span class="badge badge-running">● Running</span>',
+      exited:  '<span class="badge badge-exited">● Exited</span>',
+      paused:  '<span class="badge badge-paused">● Paused</span>',
+    }[c.status] || `<span class="badge badge-other">● ${c.status}</span>`;
 
-  // ── Poll every 3 s ─────────────────────────────────────────
-  fetchState();
-  setInterval(fetchState, 3000);
+    let updBadge;
+    if (c.checking) {
+      updBadge = '<span class="badge badge-checking">⟳ Checking…</span>';
+    } else {
+      updBadge = {
+        up_to_date:       '<span class="badge badge-uptodate">✓ Up to date</span>',
+        update_available: '<span class="badge badge-available">⬆ Update available</span>',
+        error:            '<span class="badge badge-error">✕ Error</span>',
+      }[c.update_status] || '<span class="badge badge-unknown">— Unknown</span>';
+    }
+
+    const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
+    const actions = c.is_self
+      ? '<span class="self-lock" title="Cannot update self while running">🔒</span>'
+      : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${c.name}')">🔍</button>
+         <button class="btn btn-success btn-sm" onclick="updateOne('${c.name}')" ${c.update_status !== 'update_available' ? 'disabled' : ''}>⬆ Update</button>`;
+
+    return `<tr>
+      <td><div class="name-cell">${c.name}${selfTag}</div></td>
+      <td class="image-cell hide-mobile" title="${c.image}">${c.image}</td>
+      <td>${stateBadge}</td>
+      <td>${updBadge}</td>
+      <td><div class="actions">${actions}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+async function checkAll() {
+  await fetch('/api/check/all', { method: 'POST' });
+  toast('Checking all containers…', 'info');
+}
+
+async function checkOne(name) {
+  await fetch('/api/check/' + encodeURIComponent(name), { method: 'POST' });
+  toast('Checking ' + name + '…', 'info');
+}
+
+async function updateOne(name) {
+  if (!confirm('Update ' + name + '? The container will be restarted.')) return;
+  toast('Updating ' + name + '…', 'info');
+  const r = await fetch('/api/update/' + encodeURIComponent(name), { method: 'POST' });
+  const d = await r.json();
+  if (d.ok) toast(name + ' updated successfully ✓', 'success');
+  else toast('Update failed: ' + d.error, 'error');
+  poll();
+}
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// start
+poll();
+setInterval(poll, 4000);
 </script>
 </body>
 </html>

@@ -9,8 +9,8 @@ A lightweight self-hosted web app that monitors your Docker containers for image
 - 🔍 **Check for updates** on demand (per container or all at once) or on a configurable schedule
 - ⬆️ **Apply updates** on demand or automatically on a configurable minutes interval
 - 🔒 **Self-update protection** — dockwatch auto-detects itself and never updates its own container while running
+- ⚙️ **Settings panel** — configure check interval, auto-update interval, and startup scan from the UI
 - 📱 Responsive UI — works great on desktop and mobile
-- 🔔 Toast notifications for all actions
 
 ## Quick start
 
@@ -37,11 +37,11 @@ docker compose up -d dockwatch
 Then open **http://your-server:8093**
 
 > **Note:** The Docker socket (`/var/run/docker.sock`) must be mounted — this is how dockwatch talks to Docker.
-> Schedules (check interval and auto-update interval) are configured entirely from the UI — no environment variables needed.
+> All schedule settings are configured from the UI Settings panel and persisted across restarts.
 
 ## Self-update protection
 
-Dockwatch automatically detects its own container at startup by matching its hostname to the running container list. It will never update itself while running. To update dockwatch, run the commands below — it will pull the new image and recreate the container without any data loss.
+Dockwatch automatically detects its own container at startup by matching its hostname to the running container list. It will never update itself while running. To update dockwatch, use the commands below.
 
 ## Updating
 
