@@ -69,7 +69,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── main ── */
-    main { padding: 14px 20px; max-width: 1400px; margin: 0 auto; }
+    main { padding: 14px 20px; max-width: 1600px; margin: 0 auto; }
 
     /* ── summary ── */
     .summary { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -130,13 +130,16 @@
     /* ── container grid ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 750px) {
       .grid { grid-template-columns: repeat(2, 1fr); }
     }
-    @media (max-width: 560px) {
+    @media (max-width: 480px) {
       .grid { grid-template-columns: 1fr; }
     }
 
