@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dockwatch</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3a;
+      --accent:    #3b82f6;
+      --green:     #22c55e;
+      --yellow:    #f59e0b;
+      --red:       #ef4444;
+      --muted:     #6b7280;
+      --text:      #e5e7eb;
+      --text-sub:  #9ca3af;
+      --radius:    10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+    .brand { display: flex; align-items: center; gap: .6rem; }
+    .brand svg { width: 28px; height: 28px; }
+    .brand h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -.5px; }
+    .version { font-size: .7rem; color: var(--muted); align-self: flex-end; margin-bottom: 1px; }
+
+    .header-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+    /* ── Buttons ── */
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      font-size: .85rem;
+      font-weight: 600;
+      padding: .45rem .9rem;
+      transition: opacity .15s, background .15s;
+    }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary  { background: var(--accent); color: #fff; }
+    .btn-success  { background: var(--green);  color: #fff; }
+    .btn-warning  { background: var(--yellow); color: #000; }
+    .btn-danger   { background: var(--red);    color: #fff; }
+    .btn-ghost    { background: var(--border); color: var(--text); }
+    button:not(:disabled):hover { opacity: .85; }
+
+    /* ── Main layout ── */
+    main { padding: 1.25rem 1.5rem; max-width: 1200px; margin: 0 auto; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+      padding: .75rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .82rem;
+      color: var(--text-sub);
+    }
+    .status-bar .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block; margin-right: .3rem;
+    }
+    .dot-green  { background: var(--green); }
+    .dot-yellow { background: var(--yellow); animation: pulse 1.2s infinite; }
+    .dot-muted  { background: var(--muted); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .3; }
+    }
+
+    /* ── Schedule panel ── */
+    .schedule-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .schedule-panel label { font-size: .78rem; color: var(--text-sub); display: block; margin-bottom: .25rem; }
+    .schedule-panel input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: .4rem .65rem;
+      font-size: .85rem;
+      width: 100%;
+    }
+    .schedule-panel input:focus { outline: 2px solid var(--accent); }
+    .sched-field { flex: 1; min-width: 140px; }
+
+    /* ── Summary cards ── */
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: .75rem;
+      margin-bottom: 1.25rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .85rem 1rem;
+      text-align: center;
+    }
+    .card .num { font-size: 2rem; font-weight: 700; line-height: 1; }
+    .card .lbl { font-size: .72rem; color: var(--text-sub); margin-top: .25rem; text-transform: uppercase; letter-spacing: .05em; }
+    .num-green  { color: var(--green); }
+    .num-yellow { color: var(--yellow); }
+    .num-muted  { color: var(--muted); }
+    .num-blue   { color: var(--accent); }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    thead { background: var(--bg); }
+    th {
+      text-align: left;
+      padding: .65rem 1rem;
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+    tbody tr {
+      border-top: 1px solid var(--border);
+      transition: background .1s;
+    }
+    tbody tr:hover { background: rgba(255,255,255,.025); }
+    td { padding: .65rem 1rem; vertical-align: middle; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      padding: .25rem .6rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 600;
+    }
+    .badge-green  { background: rgba(34,197,94,.15);  color: var(--green); }
+    .badge-yellow { background: rgba(245,158,11,.15); color: var(--yellow); }
+    .badge-muted  { background: rgba(107,114,128,.15);color: var(--muted); }
+    .badge-blue   { background: rgba(59,130,246,.15); color: var(--accent); }
+    .badge-red    { background: rgba(239,68,68,.15);  color: var(--red); }
+
+    .image-name { font-family: monospace; font-size: .78rem; color: var(--text-sub); word-break: break-all; }
+    .self-label { font-size: .68rem; color: var(--muted); font-style: italic; margin-left: .4rem; }
+    .actions-cell { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+    /* ── Empty / loading ── */
+    .empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    #toast-container {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      z-index: 9999;
+    }
+    .toast {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: .65rem 1rem;
+      font-size: .82rem;
+      max-width: 320px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.4);
+      animation: slide-in .2s ease;
+    }
+    .toast.success { border-left-color: var(--green); }
+    .toast.error   { border-left-color: var(--red); }
+    @keyframes slide-in {
+      from { transform: translateX(30px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+
+    /* ── Self-update warning banner ── */
+    .self-warning {
+      background: rgba(245,158,11,.1);
+      border: 1px solid rgba(245,158,11,.3);
+      border-radius: var(--radius);
+      padding: .65rem 1rem;
+      font-size: .8rem;
+      color: var(--yellow);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      th.hide-sm, td.hide-sm { display: none; }
+      .actions-cell { gap: .3rem; }
+      button { padding: .4rem .7rem; font-size: .78rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <!-- Docker whale icon -->
+    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="50" height="50" rx="10" fill="#1a1d27"/>
+      <path d="M8 26c0-4 3-7 8-7h18c3 0 6 2 7 5 1 0 7 0 7-6H6c0 4.5 2 8 2 8z" fill="#3b82f6"/>
+      <rect x="10" y="17" width="6" height="5" rx="1" fill="#3b82f6"/>
+      <rect x="18" y="17" width="6" height="5" rx="1" fill="#3b82f6"/>
+      <rect x="26" y="17" width="6" height="5" rx="1" fill="#3b82f6"/>
+      <rect x="18" y="10" width="6" height="5" rx="1" fill="#3b82f6"/>
+      <rect x="26" y="10" width="6" height="5" rx="1" fill="#3b82f6"/>
+    </svg>
+    <h1>Dockwatch</h1>
+    <span class="version">v{{ version }}</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-ghost" id="btn-check-all">🔍 Check All</button>
+    <button class="btn-success" id="btn-update-all">⬆ Update All</button>
+  </div>
+</header>
+
+<main>
+
+  <div class="self-warning">
+    ⚠️ <strong>dockwatch</strong> will never update itself automatically — update it manually to avoid interruption.
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar" id="status-bar">
+    <span id="status-text"><span class="dot dot-muted"></span>Loading…</span>
+    <span id="last-check-text"></span>
+    <span id="schedule-text"></span>
+  </div>
+
+  <!-- Schedule config -->
+  <div class="schedule-panel">
+    <div class="sched-field">
+      <label>Check interval (minutes)</label>
+      <input type="number" id="inp-check-interval" min="1" placeholder="60" />
+    </div>
+    <div class="sched-field">
+      <label>Auto-update daily at (HH:MM, leave blank to disable)</label>
+      <input type="text" id="inp-update-time" placeholder="e.g. 03:00" />
+    </div>
+    <button class="btn-primary" id="btn-save-schedule">💾 Save Schedule</button>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary">
+    <div class="card">
+      <div class="num num-blue" id="sum-total">–</div>
+      <div class="lbl">Containers</div>
+    </div>
+    <div class="card">
+      <div class="num num-green" id="sum-uptodate">–</div>
+      <div class="lbl">Up to date</div>
+    </div>
+    <div class="card">
+      <div class="num num-yellow" id="sum-updates">–</div>
+      <div class="lbl">Updates available</div>
+    </div>
+    <div class="card">
+      <div class="num num-muted" id="sum-unknown">–</div>
+      <div class="lbl">Unknown</div>
+    </div>
+  </div>
+
+  <!-- Container table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Container</th>
+          <th class="hide-sm">Image</th>
+          <th>Status</th>
+          <th class="hide-sm">Last checked</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="container-tbody">
+        <tr><td colspan="5"><div class="empty"><div class="spinner"></div>Loading containers…</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<div id="toast-container"></div>
+
+<script>
+  const SELF = "{{ self_name }}";
+  let pollTimer = null;
+  let appState = {};
+
+  // ── Toast ──────────────────────────────────────────────────
+  function toast(msg, type = "info") {
+    const el = document.createElement("div");
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    document.getElementById("toast-container").appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  // ── Fetch state from API ───────────────────────────────────
+  async function fetchState() {
+    try {
+      const res = await fetch("/api/state");
+      if (!res.ok) throw new Error(res.statusText);
+      appState = await res.json();
+      renderUI(appState);
+    } catch (e) {
+      document.getElementById("status-text").innerHTML =
+        `<span class="dot dot-muted"></span>Error reaching server`;
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────────
+  function renderUI(s) {
+    // Status bar
+    const checking = s.checking || s.updating.length > 0;
+    const statusText = document.getElementById("status-text");
+    if (s.checking) {
+      statusText.innerHTML = `<span class="dot dot-yellow"></span>Checking for updates…`;
+    } else if (s.updating.length > 0) {
+      statusText.innerHTML = `<span class="dot dot-yellow"></span>Updating: ${s.updating.join(", ")}`;
+    } else {
+      statusText.innerHTML = `<span class="dot dot-green"></span>Idle`;
+    }
+
+    const lc = document.getElementById("last-check-text");
+    lc.textContent = s.last_full_check ? `Last check: ${s.last_full_check}` : "Not checked yet";
+
+    const st = document.getElementById("schedule-text");
+    const autoUp = s.update_schedule ? `Auto-update: ${s.update_schedule}` : "Auto-update: off";
+    st.textContent = `Check every ${s.check_schedule}m · ${autoUp}`;
+
+    // Schedule inputs (only update if not focused)
+    const inpInterval = document.getElementById("inp-check-interval");
+    const inpTime = document.getElementById("inp-update-time");
+    if (document.activeElement !== inpInterval) inpInterval.value = s.check_schedule;
+    if (document.activeElement !== inpTime) inpTime.value = s.update_schedule || "";
+
+    // Summary
+    const containers = s.containers;
+    const names = Object.keys(containers);
+    const upToDate = names.filter(n => containers[n].status === "up-to-date").length;
+    const updates  = names.filter(n => containers[n].status === "update-available").length;
+    const unknown  = names.filter(n => containers[n].status === "unknown").length;
+
+    document.getElementById("sum-total").textContent    = names.length;
+    document.getElementById("sum-uptodate").textContent = upToDate;
+    document.getElementById("sum-updates").textContent  = updates;
+    document.getElementById("sum-unknown").textContent  = unknown;
+
+    // Update-all button
+    const btnUpdateAll = document.getElementById("btn-update-all");
+    btnUpdateAll.disabled = updates === 0 || s.updating.length > 0;
+
+    // Check-all button
+    document.getElementById("btn-check-all").disabled = s.checking;
+
+    // Table
+    const tbody = document.getElementById("container-tbody");
+    if (names.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty">${
+        s.checking
+          ? '<div class="spinner"></div>Scanning containers…'
+          : 'No containers found. Try clicking Check All.'
+      }</div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = names.sort().map(name => {
+      const info = containers[name];
+      const isSelf = name === SELF;
+      const isUpdating = s.updating.includes(name);
+
+      const statusBadge = badgeForStatus(info.status, isUpdating);
+
+      const checkBtn = `<button class="btn-ghost" onclick="checkOne('${name}')" ${s.checking ? "disabled" : ""}>
+        🔍 Check
+      </button>`;
+
+      const updateBtn = isSelf
+        ? `<span class="self-label">🔒 self</span>`
+        : `<button class="btn-warning" onclick="updateOne('${name}')"
+            ${isUpdating || info.status !== 'update-available' ? 'disabled' : ''}>
+            ⬆ Update
+          </button>`;
+
+      return `
+        <tr>
+          <td><strong>${name}</strong>${isSelf ? '<span class="self-label">(this app)</span>' : ''}</td>
+          <td class="hide-sm"><span class="image-name">${info.image}</span></td>
+          <td>${statusBadge}</td>
+          <td class="hide-sm">${info.last_checked || '–'}</td>
+          <td><div class="actions-cell">${checkBtn}${updateBtn}</div></td>
+        </tr>`;
+    }).join("");
+  }
+
+  function badgeForStatus(status, isUpdating) {
+    if (isUpdating)
+      return `<span class="badge badge-blue"><span class="dot dot-yellow"></span>Updating…</span>`;
+    switch (status) {
+      case "up-to-date":
+        return `<span class="badge badge-green">✓ Up to date</span>`;
+      case "update-available":
+        return `<span class="badge badge-yellow">⬆ Update available</span>`;
+      default:
+        return `<span class="badge badge-muted">? Unknown</span>`;
+    }
+  }
+
+  // ── Actions ────────────────────────────────────────────────
+  async function checkOne(name) {
+    try {
+      await fetch("/api/check", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name})
+      });
+      toast(`Checking ${name}…`);
+    } catch(e) { toast("Request failed", "error"); }
+  }
+
+  async function updateOne(name) {
+    if (name === SELF) { toast("Cannot update dockwatch itself.", "error"); return; }
+    try {
+      const res = await fetch("/api/update", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name})
+      });
+      const j = await res.json();
+      if (j.ok) toast(`Updating ${name}…`, "success");
+      else toast(j.error, "error");
+    } catch(e) { toast("Request failed", "error"); }
+  }
+
+  document.getElementById("btn-check-all").addEventListener("click", async () => {
+    try {
+      const res = await fetch("/api/check", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
+      const j = await res.json();
+      if (j.ok) toast("Checking all containers…");
+      else toast(j.error, "error");
+    } catch(e) { toast("Request failed", "error"); }
+  });
+
+  document.getElementById("btn-update-all").addEventListener("click", async () => {
+    if (!confirm("Update all containers with available updates? (dockwatch itself will be skipped)")) return;
+    try {
+      const res = await fetch("/api/update", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
+      const j = await res.json();
+      if (j.ok) toast("Updating all eligible containers…", "success");
+      else toast(j.error, "error");
+    } catch(e) { toast("Request failed", "error"); }
+  });
+
+  document.getElementById("btn-save-schedule").addEventListener("click", async () => {
+    const mins = parseInt(document.getElementById("inp-check-interval").value);
+    const time = document.getElementById("inp-update-time").value.trim();
+    if (isNaN(mins) || mins < 1) { toast("Enter a valid interval (minutes)", "error"); return; }
+    try {
+      const res = await fetch("/api/schedule", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({check_schedule: mins, update_schedule: time})
+      });
+      const j = await res.json();
+      if (j.ok) toast("Schedule saved.", "success");
+    } catch(e) { toast("Request failed", "error"); }
+  });
+
+  // ── Poll every 3 s ─────────────────────────────────────────
+  fetchState();
+  setInterval(fetchState, 3000);
+</script>
+</body>
+</html>

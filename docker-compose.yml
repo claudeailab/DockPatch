@@ -1,0 +1,17 @@
+services:
+  dockwatch:
+    image: ghcr.io/claudeailab/dockwatch
+    container_name: dockwatch
+    hostname: dockwatch
+    restart: unless-stopped
+    user: "0"
+    environment:
+      TZ: ${TZ}
+      SELF_NAME: dockwatch          # must match container_name — prevents self-update
+      CHECK_SCHEDULE_MINUTES: 60    # how often to auto-check (default 60)
+      UPDATE_SCHEDULE: ""           # daily auto-update time HH:MM, blank = disabled
+    ports:
+      - 8090:8090
+    volumes:
+      - ./config/dockwatch:/data
+      - /var/run/docker.sock:/var/run/docker.sock  # required — gives access to Docker daemon
