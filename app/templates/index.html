@@ -428,6 +428,7 @@
 let containers = [];
 let wasChecking = false;
 let pollInFlight = false;
+let isScanning = false;
 
 // ── stat counter animation ──
 const statDisplayed = {};
@@ -559,23 +560,23 @@ async function poll() {
     const r = await fetch('/api/containers');
     const d = await r.json();
     containers = d.containers;
-    const isChecking = d.checking_all;
+    isScanning = d.checking_all;
 
     const pill = document.getElementById('scanning-pill');
-    if (isChecking) {
+    if (isScanning) {
       pill.classList.add('visible');
     } else {
       if (wasChecking) toast('Update check complete', 'success');
       pill.classList.remove('visible');
     }
-    wasChecking = isChecking;
+    wasChecking = isScanning;
 
     const hasUpdates = containers.some(c => c.update_status === 'update_available' && !c.is_self);
-    const busyAll    = isChecking || containers.some(c => c.update_status === 'updating');
-    document.getElementById('check-all-btn').disabled  = isChecking;
+    const busyAll    = isScanning || containers.some(c => c.update_status === 'updating');
+    document.getElementById('check-all-btn').disabled  = isScanning;
     document.getElementById('update-all-btn').disabled = !hasUpdates || busyAll;
 
-    updateStats(isChecking);
+    updateStats(isScanning);
     renderGrid();
   } catch(e) {
     console.error('poll error:', e);
@@ -651,12 +652,16 @@ function renderGrid() {
     const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
 
     const isBusy = c.update_status === 'checking' || c.update_status === 'updating';
+    // Update button is disabled when: scanning is in progress, or this container is busy,
+    // or there is no update available for it.
+    const updateDisabled = isScanning || isBusy || c.update_status !== 'update_available';
+
     const actions = c.is_self
       ? `<span class="self-lock" title="Update dockpatch manually">🔒</span>`
       : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${escAttr(c.name)}')"
            title="Check" ${isBusy ? 'disabled' : ''}>🔍</button>
          <button class="btn btn-success btn-sm" onclick="updateOne('${escAttr(c.name)}')"
-           ${c.update_status !== 'update_available' ? 'disabled' : ''}>Update</button>`;
+           ${updateDisabled ? 'disabled' : ''}>Update</button>`;
 
     let cardClass = 'card';
     if (c.is_self)                                   cardClass += ' is-self';
