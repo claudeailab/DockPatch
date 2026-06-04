@@ -13,4 +13,4 @@ COPY app/ .
 
 EXPOSE 8093
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8093", "--workers", "1", "--threads", "4", "--timeout", "120", "main:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8093", "--workers", "1", "--threads", "4", "--timeout", "120", "--worker-class", "gthread", "main:app"]
