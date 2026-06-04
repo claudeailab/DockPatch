@@ -12,24 +12,23 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.1.6"
+VERSION = "0.1.7"
 
 client = docker.from_env()
 
 SETTINGS_FILE = "/data/settings.json"
 
-# ── state ────────────────────────────────────────────────────────────────────
-container_cache: dict[str, dict] = {}   # name → info dict
+# ── state ─────────────────────────────────────────────────────────────────────
+container_cache: dict[str, dict] = {}
 cache_lock = threading.Lock()
-checking_set: set[str] = set()          # names currently being pull-checked
+checking_set: set[str] = set()
 checking_all_flag = threading.Event()
 updating_set: set[str] = set()
 
 # ── self-detection ────────────────────────────────────────────────────────────
 def get_self_name() -> str:
-    """Return the container name of this dockwatch instance, or '' if not found."""
     try:
-        own_id = socket.gethostname()          # Docker sets hostname = short container ID
+        own_id = socket.gethostname()
         c = client.containers.get(own_id)
         return c.name.lstrip("/")
     except Exception:
@@ -49,7 +48,6 @@ def load_settings() -> dict:
     try:
         with open(SETTINGS_FILE) as f:
             s = json.load(f)
-        # fill any missing keys
         for k, v in DEFAULT_SETTINGS.items():
             s.setdefault(k, v)
         return s
@@ -61,24 +59,49 @@ def save_settings(s: dict):
     with open(SETTINGS_FILE, "w") as f:
         json.dump(s, f, indent=2)
 
+# ── image string helper ───────────────────────────────────────────────────────
+def get_image_str(c) -> str:
+    """
+    Best-effort resolution of a pullable image reference for a container.
+
+    Priority:
+    1. c.attrs["Config"]["Image"]  — always set to what was passed to `docker run`
+                                     e.g. "grafana/grafana:latest"
+    2. First tag from c.image.tags  — the image object's tag list (sometimes empty)
+    3. Empty string — nothing pullable found
+    """
+    # Option 1: the original image string from the container config
+    cfg_image = (c.attrs.get("Config") or {}).get("Image", "")
+    if cfg_image and not cfg_image.startswith("sha256:"):
+        return cfg_image
+
+    # Option 2: tags on the image object
+    try:
+        tags = c.image.tags
+        if tags:
+            return tags[0]
+    except Exception:
+        pass
+
+    return ""
+
 # ── helpers ───────────────────────────────────────────────────────────────────
 def is_pullable(image_str: str) -> bool:
-    """Return False for local/digest-only images that can't be pulled from a registry."""
     if not image_str:
         return False
-    # digest-only refs like sha256:abc… or image@sha256:… with no tag are un-pullable for comparison
     if image_str.startswith("sha256:"):
+        return False
+    # digest-pinned refs like image@sha256:… can be pulled but can't be compared easily;
+    # treat them as not pullable for update-check purposes
+    if "@sha256:" in image_str:
         return False
     return True
 
 def pull_check(name: str, image_str: str) -> tuple[str, str]:
-    """
-    Pull the image and compare digests.
-    Returns (update_status, reason).
-    update_status in: 'up_to_date', 'update_available', 'error', 'skipped'
-    """
     if not is_pullable(image_str):
-        return "error", "No pullable tag (local or digest-only image)"
+        reason = "No pullable tag (local or digest-only image)"
+        log.info("Check %s → skipped (%s)", name, reason)
+        return "error", reason
 
     try:
         local_img = client.images.get(image_str)
@@ -109,7 +132,6 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
         return "error", f"Unexpected error: {str(e)[:120]}"
 
     if not remote_digest or not local_digest:
-        # digests missing — fall back to ID comparison
         if local_img.id == remote_img.id:
             return "up_to_date", ""
         return "update_available", ""
@@ -119,7 +141,6 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
     return "update_available", ""
 
 def snapshot_containers() -> list[dict]:
-    """Return current Docker container list with cached update statuses merged in."""
     try:
         containers = client.containers.list(all=True)
     except Exception as e:
@@ -130,10 +151,9 @@ def snapshot_containers() -> list[dict]:
     with cache_lock:
         for c in containers:
             name = c.name.lstrip("/")
-            image_str = c.image.tags[0] if c.image.tags else ""
+            image_str = get_image_str(c)
             cached = container_cache.get(name, {})
 
-            # Determine update_status
             if name in checking_set:
                 update_status = "checking"
                 reason = ""
@@ -163,23 +183,21 @@ def _do_check_one(name: str, image_str: str):
         status, reason = pull_check(name, image_str)
         with cache_lock:
             container_cache[name] = {"update_status": status, "update_reason": reason}
-        log.info("Check %s → %s (%s)", name, status, reason)
+        log.info("Check %s → %s%s", name, status, f" ({reason})" if reason else "")
     finally:
         checking_set.discard(name)
 
 def check_one(name: str):
-    """Check a single container by name in a background thread."""
     try:
         c = client.containers.get(name)
     except docker.errors.NotFound:
         log.warning("check_one: container %r not found", name)
         return
-    image_str = c.image.tags[0] if c.image.tags else ""
+    image_str = get_image_str(c)
     t = threading.Thread(target=_do_check_one, args=(name, image_str), daemon=True)
     t.start()
 
 def check_all():
-    """Check all containers (except self) in background threads."""
     if checking_all_flag.is_set():
         log.info("check_all already running, skipping")
         return
@@ -193,7 +211,7 @@ def check_all():
                 name = c.name.lstrip("/")
                 if name == SELF_NAME:
                     continue
-                image_str = c.image.tags[0] if c.image.tags else ""
+                image_str = get_image_str(c)
                 t = threading.Thread(target=_do_check_one, args=(name, image_str), daemon=True)
                 t.start()
                 threads.append(t)
@@ -214,7 +232,7 @@ def do_update(name: str) -> tuple[bool, str]:
     updating_set.add(name)
     try:
         c = client.containers.get(name)
-        image_str = c.image.tags[0] if c.image.tags else ""
+        image_str = get_image_str(c)
         if not image_str:
             return False, "No pullable image tag"
 
@@ -326,7 +344,6 @@ def on_startup():
         log.info("check_on_startup=true — running initial check")
         check_all()
 
-# called by gunicorn post_fork or __main__
 on_startup()
 
 if __name__ == "__main__":
