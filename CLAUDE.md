@@ -1,36 +1,19 @@
-# CLAUDE.md — Project Guidelines
+# CLAUDE.md
 
-## Docker Build
-- The web app is always packaged as a Docker container.
-- Always build multi-platform images targeting **x86 (amd64)** and **ARM (arm64)**.
+## Project Guidelines
 
-## Container Registry
-- Always host the image on the **GitHub Container Registry (ghcr.io)**.
+- The web app is built as a Docker container and must always be built for both **x86** and **ARM** architectures.
+- The image is always hosted on the **GitHub Container Registry (GHCR)**.
+- Always merge branches and pull requests and run the GitHub Actions workflow for the build.
+- Always display a discreet version number on the web app and always bump it up with each push.
+- The web app must always be functional and intuitive on both **desktop** and **mobile**.
+- On the GitHub README file, add an **"Updating"** section with the following command:
 
-## Branching & CI
-- Always merge branches and pull requests after changes.
-- Always trigger and run the GitHub Actions workflow for the build after merging.
-
-## Versioning
-- Always display a discreet version number visibly on the web app (e.g. in a footer or corner badge).
-- Always bump the version number with every push.
-
-## UI / UX
-- The web app must always be fully functional and intuitive on both **desktop** and **mobile**.
-
-## README — Updating Section
-Add the following section to the GitHub `README.md`, replacing `${project_name}` with the actual project name:
-
-```markdown
-## Updating
-
-\`\`\`bash
+```
 docker compose pull ${project_name} && docker compose up -d ${project_name}
-\`\`\`
 ```
 
-## docker-compose.yml Template
-Use the following as the template for `docker-compose.yml`, replacing `${project_name}` with the actual project name:
+- Always use the following as a template for `docker-compose.yml`, replacing `${project_name}` with the actual project name:
 
 ```yaml
   ${project_name}:
