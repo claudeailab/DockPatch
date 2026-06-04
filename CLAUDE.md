@@ -1,43 +1,35 @@
-# CLAUDE.md — Project Guidelines
+# Dockpatch — Project Guidelines
 
-## Docker Build
-- The web app is always built as a Docker container
-- Always build for both **x86** and **ARM** architectures (multi-platform builds)
-- Always host the image on the **GitHub Container Registry (ghcr.io)**
-
-## GitHub Workflow
-- Always merge branches and pull requests after changes
-- Always trigger and run the GitHub Actions workflow for the build after merging
+## Docker build
+- Always build the image for both **x86 (amd64)** and **arm64**
+- Always host the image on the **GitHub Container Registry** (`ghcr.io/claudeailab/dockpatch`)
+- Always merge branches/pull requests and run the GitHub Actions build workflow after changes
 
 ## Versioning
-- Always display a discreet version number on the web app UI
-- Always bump the version number with each push
+- Always display a discreet version number in the web UI
+- Always bump the version with each push
 
 ## UI / UX
-- The web app must always be fully functional and intuitive on both **desktop** and **mobile**
+- The web app must always be functional and intuitive on **desktop and mobile**
 
-## README — Updating Section
-Add the following section to the GitHub README:
-
-### Updating
+## README — Updating section
+The README must always include an **Updating** section with:
 ```bash
-docker compose pull ${project_name} && docker compose up -d ${project_name}
+docker compose pull dockpatch && docker compose up -d dockpatch
 ```
 
-## docker-compose.yml Template
-Use the following as the template for `docker-compose.yml`, replacing `${project_name}` with the actual project name:
-
+## docker-compose.yml template
 ```yaml
-  ${project_name}:
-    image: ghcr.io/claudeailab/${project_name}
-    container_name: ${project_name}
-    hostname: ${project_name}
-    restart: unless-stopped
-    user: "0"
-    environment:
-      TZ: ${TZ}
-    ports:
-      - 8090:8090
-    volumes:
-      - ./config/${project_name}:/data
+dockpatch:
+  image: ghcr.io/claudeailab/dockpatch
+  container_name: dockpatch
+  hostname: dockpatch
+  restart: unless-stopped
+  user: "0"
+  environment:
+    TZ: ${TZ}
+  ports:
+    - 8093:8093
+  volumes:
+    - ./config/dockpatch:/data
 ```

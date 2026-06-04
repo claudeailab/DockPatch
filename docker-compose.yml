@@ -1,8 +1,8 @@
 services:
-  dockwatch:
-    image: ghcr.io/claudeailab/dockwatch
-    container_name: dockwatch
-    hostname: dockwatch
+  dockpatch:
+    image: ghcr.io/claudeailab/dockpatch
+    container_name: dockpatch
+    hostname: dockpatch
     restart: unless-stopped
     user: "0"
     environment:
@@ -10,5 +10,5 @@ services:
     ports:
       - 8093:8093
     volumes:
-      - ./config/dockwatch:/data
+      - ./config/dockpatch:/data
       - /var/run/docker.sock:/var/run/docker.sock  # required — gives access to Docker daemon

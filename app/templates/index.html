@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dockwatch</title>
+  <title>Dockpatch</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -45,7 +45,7 @@
     .header-right { display: flex; align-items: center; gap: 8px; }
     .version { font-size: 11px; color: var(--muted); }
 
-    /* ── scanning pill (discreet, inside header-right) ── */
+    /* ── scanning pill ── */
     #scanning-pill {
       display: none;
       align-items: center;
@@ -92,7 +92,6 @@
     .stat.c-unknown  { border-color: #374151; }
 
     /* ── toolbar ── */
-    /* single row: filter | Check all | Update all */
     .toolbar {
       display: flex;
       align-items: center;
@@ -267,9 +266,8 @@
 
 <!-- ── header ── -->
 <header>
-  <div class="logo"><span>🐳</span> Dockwatch</div>
+  <div class="logo"><span>🐳</span> Dockpatch</div>
   <div class="header-right">
-    <!-- discreet scanning pill -->
     <div id="scanning-pill">
       <div class="pill-spinner"></div>
       <span>Scanning…</span>
@@ -301,11 +299,11 @@
     </div>
     <div class="stat c-unknown">
       <span class="stat-icon">❓</span>
-      <div><div class="stat-val" id="s-unknown">—</div><div class="stat-label">Not checked</div></div>
+      <div><div class="stat-val" id="s-unknown">—</div><div class="stat-label" id="s-unknown-label">Not checked</div></div>
     </div>
   </div>
 
-  <!-- toolbar: filter | check all | update all — one single row -->
+  <!-- toolbar -->
   <div class="toolbar">
     <input type="text" id="search" placeholder="🔍 Filter containers…" oninput="renderTable()">
     <button class="btn btn-primary btn-sm" id="check-all-btn" onclick="checkAll()">🔍 Check all</button>
@@ -427,25 +425,37 @@ async function poll() {
     document.getElementById('check-all-btn').disabled  = isChecking;
     document.getElementById('update-all-btn').disabled = !hasUpdates || isChecking;
 
-    updateStats();
+    updateStats(isChecking);
     renderTable();
   } catch(e) { console.error(e); }
 }
 
 // ── stats ──
-function updateStats() {
-  const total    = containers.length;
-  const running  = containers.filter(c => c.status === 'running').length;
-  const updates  = containers.filter(c => c.update_status === 'update_available').length;
-  const uptodate = containers.filter(c => c.update_status === 'up_to_date').length;
-  const checked  = containers.filter(c => ['up_to_date','update_available','error'].includes(c.update_status)).length;
-  const unknown  = total - checked;
+function updateStats(isChecking) {
+  // exclude self from all counts
+  const peers   = containers.filter(c => !c.is_self);
+  const total   = peers.length;
+  const running = peers.filter(c => c.status === 'running').length;
+  const updates = peers.filter(c => c.update_status === 'update_available').length;
+  const uptodate= peers.filter(c => c.update_status === 'up_to_date').length;
+  const checked = peers.filter(c => ['up_to_date','update_available','error','checking'].includes(c.update_status)).length;
+  const unknown = total - checked;
 
   document.getElementById('s-total').textContent    = total;
   document.getElementById('s-running').textContent  = running;
   document.getElementById('s-updates').textContent  = updates;
   document.getElementById('s-uptodate').textContent = uptodate;
   document.getElementById('s-unknown').textContent  = unknown;
+
+  // label flips between "Scanning" and "Not checked"
+  const label = document.getElementById('s-unknown-label');
+  label.textContent = isChecking ? 'Scanning…' : 'Not checked';
+  const card = label.closest('.stat');
+  if (isChecking && unknown > 0) {
+    card.style.borderColor = '#2d5a8e';
+  } else {
+    card.style.borderColor = '';
+  }
 }
 
 // ── sort ──
@@ -492,7 +502,7 @@ function renderTable() {
 
     const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
     const actions = c.is_self
-      ? '<span class="self-lock" title="Update dockwatch manually">🔒</span>'
+      ? '<span class="self-lock" title="Update dockpatch manually">🔒</span>'
       : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${escAttr(c.name)}')" title="Check for update">🔍</button>
          <button class="btn btn-success btn-sm" onclick="updateOne('${escAttr(c.name)}')" ${c.update_status !== 'update_available' ? 'disabled' : ''}>Update</button>`;
 

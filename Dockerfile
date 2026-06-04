@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-LABEL org.opencontainers.image.source="https://github.com/claudeailab/dockwatch"
+LABEL org.opencontainers.image.source="https://github.com/claudeailab/dockpatch"
 LABEL org.opencontainers.image.description="Docker container update manager"
 LABEL org.opencontainers.image.licenses="MIT"
 

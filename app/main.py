@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.1.7"
+VERSION = "0.1.8"
 
 client = docker.from_env()
 
@@ -61,28 +61,15 @@ def save_settings(s: dict):
 
 # ── image string helper ───────────────────────────────────────────────────────
 def get_image_str(c) -> str:
-    """
-    Best-effort resolution of a pullable image reference for a container.
-
-    Priority:
-    1. c.attrs["Config"]["Image"]  — always set to what was passed to `docker run`
-                                     e.g. "grafana/grafana:latest"
-    2. First tag from c.image.tags  — the image object's tag list (sometimes empty)
-    3. Empty string — nothing pullable found
-    """
-    # Option 1: the original image string from the container config
     cfg_image = (c.attrs.get("Config") or {}).get("Image", "")
     if cfg_image and not cfg_image.startswith("sha256:"):
         return cfg_image
-
-    # Option 2: tags on the image object
     try:
         tags = c.image.tags
         if tags:
             return tags[0]
     except Exception:
         pass
-
     return ""
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -91,8 +78,6 @@ def is_pullable(image_str: str) -> bool:
         return False
     if image_str.startswith("sha256:"):
         return False
-    # digest-pinned refs like image@sha256:… can be pulled but can't be compared easily;
-    # treat them as not pullable for update-check purposes
     if "@sha256:" in image_str:
         return False
     return True
