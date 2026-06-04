@@ -12,246 +12,322 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.1.5"
+VERSION = "0.1.6"
 
 client = docker.from_env()
 
 SETTINGS_FILE = "/data/settings.json"
 
+# ── state ────────────────────────────────────────────────────────────────────
+container_cache: dict[str, dict] = {}   # name → info dict
+cache_lock = threading.Lock()
+checking_set: set[str] = set()          # names currently being pull-checked
+checking_all_flag = threading.Event()
+updating_set: set[str] = set()
+
+# ── self-detection ────────────────────────────────────────────────────────────
+def get_self_name() -> str:
+    """Return the container name of this dockwatch instance, or '' if not found."""
+    try:
+        own_id = socket.gethostname()          # Docker sets hostname = short container ID
+        c = client.containers.get(own_id)
+        return c.name.lstrip("/")
+    except Exception:
+        return ""
+
+SELF_NAME = get_self_name()
+log.info("Self-container name: %r", SELF_NAME)
+
+# ── settings ──────────────────────────────────────────────────────────────────
 DEFAULT_SETTINGS = {
-    "check_interval_minutes": 0,
+    "check_interval_minutes":  0,
     "update_interval_minutes": 0,
-    "check_on_startup": True,
+    "check_on_startup":        True,
 }
 
-settings = dict(DEFAULT_SETTINGS)
-
-def load_settings():
-    global settings
-    if os.path.exists(SETTINGS_FILE):
-        try:
-            with open(SETTINGS_FILE) as f:
-                stored = json.load(f)
-                settings = {**DEFAULT_SETTINGS, **stored}
-                log.info("Settings loaded: %s", settings)
-        except Exception as e:
-            log.warning("Could not load settings: %s", e)
-    else:
-        settings = dict(DEFAULT_SETTINGS)
-
-def save_settings():
+def load_settings() -> dict:
     try:
-        os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)
-        with open(SETTINGS_FILE, "w") as f:
-            json.dump(settings, f, indent=2)
-    except Exception as e:
-        log.warning("Could not save settings: %s", e)
+        with open(SETTINGS_FILE) as f:
+            s = json.load(f)
+        # fill any missing keys
+        for k, v in DEFAULT_SETTINGS.items():
+            s.setdefault(k, v)
+        return s
+    except Exception:
+        return dict(DEFAULT_SETTINGS)
 
-def detect_self_name():
-    """Detect our own container name by matching hostname (container ID) to running containers."""
+def save_settings(s: dict):
+    os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)
+    with open(SETTINGS_FILE, "w") as f:
+        json.dump(s, f, indent=2)
+
+# ── helpers ───────────────────────────────────────────────────────────────────
+def is_pullable(image_str: str) -> bool:
+    """Return False for local/digest-only images that can't be pulled from a registry."""
+    if not image_str:
+        return False
+    # digest-only refs like sha256:abc… or image@sha256:… with no tag are un-pullable for comparison
+    if image_str.startswith("sha256:"):
+        return False
+    return True
+
+def pull_check(name: str, image_str: str) -> tuple[str, str]:
+    """
+    Pull the image and compare digests.
+    Returns (update_status, reason).
+    update_status in: 'up_to_date', 'update_available', 'error', 'skipped'
+    """
+    if not is_pullable(image_str):
+        return "error", "No pullable tag (local or digest-only image)"
+
     try:
-        hostname = socket.gethostname()
-        for c in client.containers.list():
-            if c.id.startswith(hostname) or hostname.startswith(c.short_id):
-                name = c.name
-                log.info("Self-detected as container: %s", name)
-                return name
+        local_img = client.images.get(image_str)
+        local_digest = (local_img.attrs.get("RepoDigests") or [""])[0]
+    except docker.errors.ImageNotFound:
+        return "error", "Local image not found"
     except Exception as e:
-        log.warning("Could not detect self: %s", e)
-    return None
+        return "error", f"Local image lookup failed: {e}"
 
-SELF_NAME = None
-
-# --- state ---
-container_cache: dict = {}
-cache_lock = threading.Lock()
-checking_all = False
-updating_set: set = set()
-
-def pull_check(container) -> dict:
-    """Check if a container has an update available."""
     try:
-        current_img = container.image
-        repo_tags = current_img.tags
-        if not repo_tags:
-            return {"status": "unknown", "reason": "no tag"}
-        tag = repo_tags[0]
-        pulled = client.images.pull(tag)
-        if pulled.id != current_img.id:
-            return {"status": "update_available"}
-        return {"status": "up_to_date"}
+        log.info("Pulling %s for update check…", image_str)
+        remote_img = client.images.pull(image_str)
+        remote_digest = (remote_img.attrs.get("RepoDigests") or [""])[0]
+    except docker.errors.APIError as e:
+        reason = str(e)
+        if "unauthorized" in reason.lower() or "authentication" in reason.lower():
+            reason = "Registry auth required"
+        elif "not found" in reason.lower() or "manifest" in reason.lower():
+            reason = "Image not found in registry"
+        elif "timeout" in reason.lower() or "timed out" in reason.lower():
+            reason = "Registry pull timed out"
+        else:
+            reason = f"Pull failed: {reason[:120]}"
+        log.warning("pull_check %s: %s", name, reason)
+        return "error", reason
     except Exception as e:
-        return {"status": "error", "reason": str(e)}
+        log.warning("pull_check %s unexpected error: %s", name, e)
+        return "error", f"Unexpected error: {str(e)[:120]}"
 
-def get_containers():
-    """Return list of all containers with cached update status."""
+    if not remote_digest or not local_digest:
+        # digests missing — fall back to ID comparison
+        if local_img.id == remote_img.id:
+            return "up_to_date", ""
+        return "update_available", ""
+
+    if local_digest == remote_digest:
+        return "up_to_date", ""
+    return "update_available", ""
+
+def snapshot_containers() -> list[dict]:
+    """Return current Docker container list with cached update statuses merged in."""
     try:
         containers = client.containers.list(all=True)
     except Exception as e:
-        log.error("Docker error: %s", e)
+        log.error("Failed to list containers: %s", e)
         return []
+
     result = []
     with cache_lock:
         for c in containers:
-            is_self = (c.name == SELF_NAME)
-            cached = container_cache.get(c.name, {})
-            checking = c.name in updating_set
+            name = c.name.lstrip("/")
+            image_str = c.image.tags[0] if c.image.tags else ""
+            cached = container_cache.get(name, {})
+
+            # Determine update_status
+            if name in checking_set:
+                update_status = "checking"
+                reason = ""
+            elif name in updating_set:
+                update_status = "updating"
+                reason = ""
+            else:
+                update_status = cached.get("update_status", "unknown")
+                reason = cached.get("update_reason", "")
+
             result.append({
-                "id": c.short_id,
-                "name": c.name,
-                "image": c.image.tags[0] if c.image.tags else c.image.short_id,
-                "status": c.status,
-                "update_status": "checking" if checking else cached.get("status", "unknown"),
-                "update_reason": cached.get("reason", ""),
-                "is_self": is_self,
-                "checking": checking,
+                "name":          name,
+                "image":         image_str,
+                "status":        c.status,
+                "is_self":       name == SELF_NAME,
+                "update_status": update_status,
+                "update_reason": reason,
             })
+
+    result.sort(key=lambda x: x["name"].lower())
     return result
 
-def check_all():
-    global checking_all
-    if checking_all:
+# ── check workers ─────────────────────────────────────────────────────────────
+def _do_check_one(name: str, image_str: str):
+    checking_set.add(name)
+    try:
+        status, reason = pull_check(name, image_str)
+        with cache_lock:
+            container_cache[name] = {"update_status": status, "update_reason": reason}
+        log.info("Check %s → %s (%s)", name, status, reason)
+    finally:
+        checking_set.discard(name)
+
+def check_one(name: str):
+    """Check a single container by name in a background thread."""
+    try:
+        c = client.containers.get(name)
+    except docker.errors.NotFound:
+        log.warning("check_one: container %r not found", name)
         return
-    checking_all = True
-    log.info("Checking all containers for updates...")
-    try:
-        containers = client.containers.list(all=True)
-        for c in containers:
-            with cache_lock:
-                updating_set.add(c.name)
-            result = pull_check(c)
-            with cache_lock:
-                container_cache[c.name] = result
-                updating_set.discard(c.name)
-    except Exception as e:
-        log.error("check_all error: %s", e)
-    finally:
-        checking_all = False
-        with cache_lock:
-            updating_set.clear()
-    log.info("Check complete.")
+    image_str = c.image.tags[0] if c.image.tags else ""
+    t = threading.Thread(target=_do_check_one, args=(name, image_str), daemon=True)
+    t.start()
 
-def check_one(name):
-    with cache_lock:
-        updating_set.add(name)
-    try:
-        c = client.containers.get(name)
-        result = pull_check(c)
-        with cache_lock:
-            container_cache[name] = result
-    except Exception as e:
-        with cache_lock:
-            container_cache[name] = {"status": "error", "reason": str(e)}
-    finally:
-        with cache_lock:
-            updating_set.discard(name)
+def check_all():
+    """Check all containers (except self) in background threads."""
+    if checking_all_flag.is_set():
+        log.info("check_all already running, skipping")
+        return
+    checking_all_flag.set()
 
-def update_one(name):
+    def _worker():
+        try:
+            containers = client.containers.list(all=True)
+            threads = []
+            for c in containers:
+                name = c.name.lstrip("/")
+                if name == SELF_NAME:
+                    continue
+                image_str = c.image.tags[0] if c.image.tags else ""
+                t = threading.Thread(target=_do_check_one, args=(name, image_str), daemon=True)
+                t.start()
+                threads.append(t)
+            for t in threads:
+                t.join()
+            log.info("check_all complete")
+        except Exception as e:
+            log.error("check_all error: %s", e)
+        finally:
+            checking_all_flag.clear()
+
+    threading.Thread(target=_worker, daemon=True).start()
+
+# ── update worker ─────────────────────────────────────────────────────────────
+def do_update(name: str) -> tuple[bool, str]:
     if name == SELF_NAME:
-        log.warning("Refusing to update self (%s)", name)
-        return {"ok": False, "error": "Cannot update self while running."}
+        return False, "Cannot update self"
+    updating_set.add(name)
     try:
         c = client.containers.get(name)
-        img_tag = c.image.tags[0] if c.image.tags else None
-        if not img_tag:
-            return {"ok": False, "error": "No image tag found."}
-        client.images.pull(img_tag)
+        image_str = c.image.tags[0] if c.image.tags else ""
+        if not image_str:
+            return False, "No pullable image tag"
+
+        log.info("Updating %s…", name)
+        client.images.pull(image_str)
+
+        config = c.attrs.get("HostConfig", {})
+        net    = c.attrs.get("NetworkSettings", {}).get("Networks", {})
         c.stop()
         c.remove()
-        attrs = c.attrs["HostConfig"]
-        client.containers.run(
-            img_tag,
+
+        new_c = client.containers.run(
+            image_str,
             detach=True,
             name=name,
-            restart_policy=attrs.get("RestartPolicy"),
+            hostname=c.attrs.get("Config", {}).get("Hostname", name),
+            restart_policy=config.get("RestartPolicy", {"Name": "unless-stopped"}),
+            ports=config.get("PortBindings") or {},
+            volumes={
+                m["Source"]: {"bind": m["Destination"], "mode": m["Mode"]}
+                for m in (c.attrs.get("Mounts") or [])
+                if m.get("Type") == "bind"
+            },
+            environment=c.attrs.get("Config", {}).get("Env") or [],
+            network=list(net.keys())[0] if net else None,
         )
         with cache_lock:
-            container_cache[name] = {"status": "up_to_date"}
-        return {"ok": True}
+            container_cache[name] = {"update_status": "up_to_date", "update_reason": ""}
+        log.info("Updated %s → %s", name, new_c.id[:12])
+        return True, ""
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        log.error("Update %s failed: %s", name, e)
+        return False, str(e)
+    finally:
+        updating_set.discard(name)
 
-# ---- scheduler ----
-def run_scheduler():
+# ── scheduler ─────────────────────────────────────────────────────────────────
+scheduler_lock = threading.Lock()
+
+def rebuild_schedule():
+    with scheduler_lock:
+        schedule.clear()
+        s = load_settings()
+        ci = s.get("check_interval_minutes", 0)
+        ui = s.get("update_interval_minutes", 0)
+        if ci and ci > 0:
+            schedule.every(ci).minutes.do(check_all)
+            log.info("Scheduled check every %d min", ci)
+        if ui and ui > 0:
+            def auto_update_all():
+                for name, info in list(container_cache.items()):
+                    if info.get("update_status") == "update_available" and name != SELF_NAME:
+                        threading.Thread(target=do_update, args=(name,), daemon=True).start()
+            schedule.every(ui).minutes.do(auto_update_all)
+            log.info("Scheduled auto-update every %d min", ui)
+
+def scheduler_loop():
     while True:
-        schedule.run_pending()
-        time.sleep(10)
+        with scheduler_lock:
+            schedule.run_pending()
+        time.sleep(30)
 
-def apply_schedules():
-    schedule.clear()
-    ci = settings.get("check_interval_minutes", 0)
-    ui = settings.get("update_interval_minutes", 0)
-    if ci and ci > 0:
-        schedule.every(ci).minutes.do(lambda: threading.Thread(target=check_all, daemon=True).start())
-        log.info("Check schedule: every %s minutes", ci)
-    if ui and ui > 0:
-        def auto_update():
-            containers = client.containers.list()
-            for c in containers:
-                if c.name == SELF_NAME:
-                    continue
-                with cache_lock:
-                    s = container_cache.get(c.name, {}).get("status")
-                if s == "update_available":
-                    log.info("Auto-updating %s", c.name)
-                    update_one(c.name)
-        schedule.every(ui).minutes.do(lambda: threading.Thread(target=auto_update, daemon=True).start())
-        log.info("Auto-update schedule: every %s minutes", ui)
-
-# ---- routes ----
-
+# ── API ───────────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
     return render_template("index.html", version=VERSION)
 
 @app.route("/api/containers")
 def api_containers():
-    return jsonify({"containers": get_containers(), "checking_all": checking_all})
+    return jsonify({
+        "containers":   snapshot_containers(),
+        "checking_all": checking_all_flag.is_set(),
+    })
 
 @app.route("/api/check/all", methods=["POST"])
 def api_check_all():
-    threading.Thread(target=check_all, daemon=True).start()
+    check_all()
     return jsonify({"ok": True})
 
 @app.route("/api/check/<name>", methods=["POST"])
 def api_check_one(name):
-    threading.Thread(target=check_one, args=(name,), daemon=True).start()
+    check_one(name)
     return jsonify({"ok": True})
 
 @app.route("/api/update/<name>", methods=["POST"])
-def api_update_one(name):
+def api_update(name):
     if name == SELF_NAME:
-        return jsonify({"ok": False, "error": "Cannot update self while running."}), 403
-    result = update_one(name)
-    return jsonify(result)
+        return jsonify({"ok": False, "error": "Cannot update self"})
+    ok, err = do_update(name)
+    return jsonify({"ok": ok, "error": err})
 
 @app.route("/api/settings", methods=["GET"])
-def api_get_settings():
-    return jsonify(settings)
+def api_settings_get():
+    return jsonify(load_settings())
 
 @app.route("/api/settings", methods=["POST"])
-def api_save_settings():
-    global settings
-    data = request.get_json(force=True)
-    settings["check_interval_minutes"]  = int(data.get("check_interval_minutes") or 0)
-    settings["update_interval_minutes"] = int(data.get("update_interval_minutes") or 0)
-    settings["check_on_startup"]        = bool(data.get("check_on_startup", True))
-    save_settings()
-    apply_schedules()
-    return jsonify({"ok": True, "settings": settings})
+def api_settings_post():
+    s = request.get_json(force=True)
+    save_settings(s)
+    rebuild_schedule()
+    return jsonify({"ok": True})
 
-# ---- startup ----
-def startup():
-    global SELF_NAME
-    load_settings()
-    SELF_NAME = detect_self_name()
-    apply_schedules()
-    threading.Thread(target=run_scheduler, daemon=True).start()
-    if settings.get("check_on_startup", True):
-        log.info("check_on_startup enabled — scanning now...")
-        threading.Thread(target=check_all, daemon=True).start()
+# ── startup ───────────────────────────────────────────────────────────────────
+def on_startup():
+    rebuild_schedule()
+    threading.Thread(target=scheduler_loop, daemon=True).start()
+    s = load_settings()
+    if s.get("check_on_startup", True):
+        log.info("check_on_startup=true — running initial check")
+        check_all()
 
-startup()
+# called by gunicorn post_fork or __main__
+on_startup()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8093, debug=False)
