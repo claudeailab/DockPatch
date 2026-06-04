@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 client = docker.from_env()
 
@@ -22,7 +22,7 @@ state = {
     "containers": {},       # name -> {image, current_digest, latest_digest, status, last_checked}
     "last_full_check": None,
     "check_schedule": int(os.environ.get("CHECK_SCHEDULE_MINUTES", 60)),
-    "update_schedule": os.environ.get("UPDATE_SCHEDULE", ""),  # cron-like: "02:00" daily or ""
+    "update_schedule": int(os.environ.get("UPDATE_SCHEDULE_MINUTES", 0)),  # minutes interval, 0 = disabled
     "updating": [],         # names currently being updated
     "checking": False,
 }
@@ -146,7 +146,6 @@ def update_container(name: str):
         attrs = c.attrs
         host_config = attrs["HostConfig"]
         config = attrs["Config"]
-        net_settings = attrs["NetworkSettings"]["Networks"]
 
         # Stop & remove old container
         log.info("Stopping %s", name)
@@ -163,10 +162,6 @@ def update_container(name: str):
             restart_policy=host_config.get("RestartPolicy", {"Name": "unless-stopped"}),
             environment=config.get("Env", []),
             ports=host_config.get("PortBindings", {}),
-            volumes=[
-                f"{b[0]['HostIp'] or ''}{'/' if not b[0]['HostIp'] else ''}{k}"
-                for k, v in (host_config.get("Binds") and {} or {}).items()
-            ] if host_config.get("Binds") else None,
             binds=host_config.get("Binds"),
             network_mode=host_config.get("NetworkMode", "bridge"),
         )
@@ -209,16 +204,22 @@ def run_scheduler():
 
 
 def setup_schedules():
-    interval = state["check_schedule"]
-    schedule.every(interval).minutes.do(lambda: threading.Thread(target=check_all, daemon=True).start())
-    log.info("Check schedule: every %d minutes", interval)
+    schedule.clear()
 
-    update_time = state["update_schedule"]
-    if update_time:
-        schedule.every().day.at(update_time).do(
+    check_interval = state["check_schedule"]
+    schedule.every(check_interval).minutes.do(
+        lambda: threading.Thread(target=check_all, daemon=True).start()
+    )
+    log.info("Check schedule: every %d minutes", check_interval)
+
+    update_interval = state["update_schedule"]
+    if update_interval and int(update_interval) > 0:
+        schedule.every(int(update_interval)).minutes.do(
             lambda: threading.Thread(target=update_all, daemon=True).start()
         )
-        log.info("Auto-update schedule: daily at %s", update_time)
+        log.info("Auto-update schedule: every %d minutes", int(update_interval))
+    else:
+        log.info("Auto-update schedule: disabled")
 
 
 # ---------------------------------------------------------------------------
@@ -252,7 +253,6 @@ def api_check():
         with state_lock:
             info = state["containers"].get(name)
         if not info:
-            # try to find by running containers
             for c in get_running_containers():
                 if c.name == name:
                     threading.Thread(
@@ -289,15 +289,15 @@ def api_update():
 def api_schedule():
     data = request.get_json(silent=True) or {}
     check_mins = data.get("check_schedule")
-    update_time = data.get("update_schedule")
+    update_mins = data.get("update_schedule")
 
-    schedule.clear()
     if check_mins is not None:
         with state_lock:
             state["check_schedule"] = int(check_mins)
-    if update_time is not None:
+    if update_mins is not None:
         with state_lock:
-            state["update_schedule"] = update_time
+            state["update_schedule"] = int(update_mins) if str(update_mins).strip() else 0
+
     setup_schedules()
     return jsonify({"ok": True})
 
@@ -311,4 +311,4 @@ if __name__ == "__main__":
     threading.Thread(target=run_scheduler, daemon=True).start()
     # Initial check on startup
     threading.Thread(target=check_all, daemon=True).start()
-    app.run(host="0.0.0.0", port=8090, debug=False)
+    app.run(host="0.0.0.0", port=8093, debug=False)

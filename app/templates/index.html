@@ -255,7 +255,6 @@
 
 <header>
   <div class="brand">
-    <!-- Docker whale icon -->
     <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect width="50" height="50" rx="10" fill="#1a1d27"/>
       <path d="M8 26c0-4 3-7 8-7h18c3 0 6 2 7 5 1 0 7 0 7-6H6c0 4.5 2 8 2 8z" fill="#3b82f6"/>
@@ -294,8 +293,8 @@
       <input type="number" id="inp-check-interval" min="1" placeholder="60" />
     </div>
     <div class="sched-field">
-      <label>Auto-update daily at (HH:MM, leave blank to disable)</label>
-      <input type="text" id="inp-update-time" placeholder="e.g. 03:00" />
+      <label>Auto-update every (minutes, 0 or blank to disable)</label>
+      <input type="number" id="inp-update-interval" min="0" placeholder="0" />
     </div>
     <button class="btn-primary" id="btn-save-schedule">💾 Save Schedule</button>
   </div>
@@ -343,7 +342,6 @@
 
 <script>
   const SELF = "{{ self_name }}";
-  let pollTimer = null;
   let appState = {};
 
   // ── Toast ──────────────────────────────────────────────────
@@ -371,7 +369,6 @@
   // ── Render ─────────────────────────────────────────────────
   function renderUI(s) {
     // Status bar
-    const checking = s.checking || s.updating.length > 0;
     const statusText = document.getElementById("status-text");
     if (s.checking) {
       statusText.innerHTML = `<span class="dot dot-yellow"></span>Checking for updates…`;
@@ -385,14 +382,16 @@
     lc.textContent = s.last_full_check ? `Last check: ${s.last_full_check}` : "Not checked yet";
 
     const st = document.getElementById("schedule-text");
-    const autoUp = s.update_schedule ? `Auto-update: ${s.update_schedule}` : "Auto-update: off";
+    const autoUp = s.update_schedule && parseInt(s.update_schedule) > 0
+      ? `Auto-update: every ${s.update_schedule}m`
+      : "Auto-update: off";
     st.textContent = `Check every ${s.check_schedule}m · ${autoUp}`;
 
     // Schedule inputs (only update if not focused)
     const inpInterval = document.getElementById("inp-check-interval");
-    const inpTime = document.getElementById("inp-update-time");
+    const inpUpdate   = document.getElementById("inp-update-interval");
     if (document.activeElement !== inpInterval) inpInterval.value = s.check_schedule;
-    if (document.activeElement !== inpTime) inpTime.value = s.update_schedule || "";
+    if (document.activeElement !== inpUpdate)   inpUpdate.value   = s.update_schedule || 0;
 
     // Summary
     const containers = s.containers;
@@ -406,12 +405,8 @@
     document.getElementById("sum-updates").textContent  = updates;
     document.getElementById("sum-unknown").textContent  = unknown;
 
-    // Update-all button
-    const btnUpdateAll = document.getElementById("btn-update-all");
-    btnUpdateAll.disabled = updates === 0 || s.updating.length > 0;
-
-    // Check-all button
-    document.getElementById("btn-check-all").disabled = s.checking;
+    document.getElementById("btn-update-all").disabled = updates === 0 || s.updating.length > 0;
+    document.getElementById("btn-check-all").disabled  = s.checking;
 
     // Table
     const tbody = document.getElementById("container-tbody");
@@ -426,7 +421,7 @@
 
     tbody.innerHTML = names.sort().map(name => {
       const info = containers[name];
-      const isSelf = name === SELF;
+      const isSelf    = name === SELF;
       const isUpdating = s.updating.includes(name);
 
       const statusBadge = badgeForStatus(info.status, isUpdating);
@@ -512,14 +507,14 @@
   });
 
   document.getElementById("btn-save-schedule").addEventListener("click", async () => {
-    const mins = parseInt(document.getElementById("inp-check-interval").value);
-    const time = document.getElementById("inp-update-time").value.trim();
-    if (isNaN(mins) || mins < 1) { toast("Enter a valid interval (minutes)", "error"); return; }
+    const checkMins  = parseInt(document.getElementById("inp-check-interval").value);
+    const updateMins = parseInt(document.getElementById("inp-update-interval").value) || 0;
+    if (isNaN(checkMins) || checkMins < 1) { toast("Enter a valid check interval (minutes)", "error"); return; }
     try {
       const res = await fetch("/api/schedule", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({check_schedule: mins, update_schedule: time})
+        body: JSON.stringify({check_schedule: checkMins, update_schedule: updateMins})
       });
       const j = await res.json();
       if (j.ok) toast("Schedule saved.", "success");
