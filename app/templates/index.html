@@ -147,6 +147,7 @@
     .card:hover { border-color: #3a3d4a; }
     .card.has-update  { border-left: 3px solid var(--yellow); }
     .card.is-checking { border-left: 3px solid var(--accent); }
+    .card.is-updating { border-left: 3px solid #7c3aed; }
     .card.is-error    { border-left: 3px solid #4b1c1c; }
     .card.is-self     { border-left: 3px solid #312e81; }
 
@@ -204,6 +205,7 @@
     .badge-unknown   { background: #1e293b;   color: var(--muted);  border: 1px solid var(--border); }
     .badge-error     { background: #7f1d1d40; color: var(--red);    border: 1px solid #991b1b; }
     .badge-checking  { background: #1e3a5f40; color: #93c5fd;       border: 1px solid #2d5a8e; }
+    .badge-updating  { background: #2e1065;   color: #c4b5fd;       border: 1px solid #7c3aed; }
 
     /* ── modal backdrop ── */
     .modal-backdrop {
@@ -411,6 +413,18 @@
 <script>
 let containers = [];
 let wasChecking = false;
+let pollInFlight = false;
+
+// ── helpers ──
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+// escAttr is identical in requirements — delegate to avoid duplication
+const escAttr = escHtml;
 
 // ── grid columns ──
 const COLS_KEY = 'dockpatch_cols';
@@ -456,7 +470,6 @@ function backdropClose(e) {
 async function loadSettings() {
   const r = await fetch('/api/settings');
   const d = await r.json();
-  // Use nullish coalescing so 0 is preserved, not replaced with ''
   document.getElementById('cfg-check').value     = d.check_interval_minutes  ?? '';
   document.getElementById('cfg-update').value    = d.update_interval_minutes ?? '';
   document.getElementById('cfg-startup').checked = !!d.check_on_startup;
@@ -473,7 +486,6 @@ async function saveSettings() {
   }
   applyColumns();
 
-  // Read interval values; treat empty string as 0, but keep explicit 0 as 0
   const checkRaw  = document.getElementById('cfg-check').value;
   const updateRaw = document.getElementById('cfg-update').value;
 
@@ -482,7 +494,11 @@ async function saveSettings() {
     update_interval_minutes: updateRaw !== '' ? parseInt(updateRaw, 10) : 0,
     check_on_startup:        document.getElementById('cfg-startup').checked,
   };
-  const r = await fetch('/api/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  const r = await fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
   const d = await r.json();
   if (d.ok) { toast('Settings saved', 'success'); closeSettings(); }
   else toast('Failed to save settings', 'error');
@@ -490,6 +506,8 @@ async function saveSettings() {
 
 // ── poll ──
 async function poll() {
+  if (pollInFlight) return;          // skip if a request is already in-flight
+  pollInFlight = true;
   try {
     const r = await fetch('/api/containers');
     const d = await r.json();
@@ -506,12 +524,17 @@ async function poll() {
     wasChecking = isChecking;
 
     const hasUpdates = containers.some(c => c.update_status === 'update_available' && !c.is_self);
+    const busyAll    = isChecking || containers.some(c => c.update_status === 'updating');
     document.getElementById('check-all-btn').disabled  = isChecking;
-    document.getElementById('update-all-btn').disabled = !hasUpdates || isChecking;
+    document.getElementById('update-all-btn').disabled = !hasUpdates || busyAll;
 
     updateStats(isChecking);
     renderGrid();
-  } catch(e) { console.error(e); }
+  } catch(e) {
+    console.error('poll error:', e);
+  } finally {
+    pollInFlight = false;
+  }
 }
 
 // ── stats ──
@@ -521,9 +544,7 @@ function updateStats(isChecking) {
   const running  = peers.filter(c => c.status === 'running').length;
   const updates  = peers.filter(c => c.update_status === 'update_available').length;
   const uptodate = peers.filter(c => c.update_status === 'up_to_date').length;
-  // "unknown" = not yet touched: status is 'unknown' and not currently being checked
   const unknown  = peers.filter(c => c.update_status === 'unknown').length;
-  // containers currently being checked (shows as remaining during a scan)
   const checking = peers.filter(c => c.update_status === 'checking').length;
 
   document.getElementById('s-total').textContent    = total;
@@ -533,7 +554,7 @@ function updateStats(isChecking) {
 
   // During a scan show remaining (unknown + currently checking); after, just unknown
   const unknownDisplay = isChecking ? (unknown + checking) : unknown;
-  document.getElementById('s-unknown').textContent  = unknownDisplay;
+  document.getElementById('s-unknown').textContent = unknownDisplay;
 
   const label = document.getElementById('s-unknown-label');
   label.textContent = isChecking ? 'Remaining' : 'Not checked';
@@ -548,9 +569,9 @@ function renderGrid() {
     c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q)
   );
 
-  // sort: updates first, then alpha
+  // sort: updates first, then checking, then up-to-date, then unknown
   rows.sort((a, b) => {
-    const order = s => s === 'update_available' ? 0 : s === 'checking' ? 1 : s === 'unknown' ? 3 : 2;
+    const order = s => s === 'update_available' ? 0 : s === 'checking' || s === 'updating' ? 1 : s === 'unknown' ? 3 : 2;
     const od = order(a.update_status) - order(b.update_status);
     if (od !== 0) return od;
     return a.name.localeCompare(b.name);
@@ -567,31 +588,36 @@ function renderGrid() {
       running: '<span class="badge badge-running">● Running</span>',
       exited:  '<span class="badge badge-exited">● Exited</span>',
       paused:  '<span class="badge badge-paused">● Paused</span>',
-    }[c.status] || `<span class="badge badge-other">● ${c.status}</span>`;
+    }[c.status] || `<span class="badge badge-other">● ${escHtml(c.status)}</span>`;
 
     let updBadge;
     if (c.update_status === 'checking') {
       updBadge = '<span class="badge badge-checking">⟳ Checking…</span>';
+    } else if (c.update_status === 'updating') {
+      updBadge = '<span class="badge badge-updating">⟳ Updating…</span>';
     } else {
       updBadge = {
         up_to_date:       '<span class="badge badge-uptodate">✓ Up to date</span>',
         update_available: '<span class="badge badge-available">⬆ Update available</span>',
-        error:            `<span class="badge badge-error" title="${escHtml(c.update_reason || '')}">✕ Error</span>`,
+        error:            `<span class="badge badge-error" title="${escAttr(c.update_reason || '')}">✕ Error</span>`,
       }[c.update_status] || '<span class="badge badge-unknown">— Not checked</span>';
     }
 
     const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
 
+    const isBusy = c.update_status === 'checking' || c.update_status === 'updating';
     const actions = c.is_self
       ? `<span class="self-lock" title="Update dockpatch manually">🔒</span>`
-      : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${escAttr(c.name)}')" title="Check">🔍</button>
+      : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${escAttr(c.name)}')"
+           title="Check" ${isBusy ? 'disabled' : ''}>🔍</button>
          <button class="btn btn-success btn-sm" onclick="updateOne('${escAttr(c.name)}')"
            ${c.update_status !== 'update_available' ? 'disabled' : ''}>Update</button>`;
 
     // card accent class
     let cardClass = 'card';
-    if (c.is_self)                                 cardClass += ' is-self';
+    if (c.is_self)                                   cardClass += ' is-self';
     else if (c.update_status === 'update_available') cardClass += ' has-update';
+    else if (c.update_status === 'updating')         cardClass += ' is-updating';
     else if (c.update_status === 'checking')         cardClass += ' is-checking';
     else if (c.update_status === 'error')            cardClass += ' is-error';
 
@@ -609,15 +635,11 @@ function renderGrid() {
   }).join('');
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function escAttr(s) { return escHtml(s); }
-
 // ── actions ──
 async function checkAll() {
   await fetch('/api/check/all', { method: 'POST' });
   toast('Scanning all containers…', 'info');
+  poll();
 }
 
 async function checkOne(name) {
@@ -630,8 +652,7 @@ async function updateOne(name) {
   toast('Updating ' + name + '…', 'info');
   const r = await fetch('/api/update/' + encodeURIComponent(name), { method: 'POST' });
   const d = await r.json();
-  if (d.ok) toast(name + ' updated ✓', 'success');
-  else toast('Update failed: ' + d.error, 'error');
+  if (!d.ok) toast('Update failed: ' + d.error, 'error');
   poll();
 }
 
@@ -640,12 +661,12 @@ async function updateAll() {
   if (!updatable.length) return;
   if (!confirm(`Update ${updatable.length} container(s)? Each will be restarted.`)) return;
   toast(`Updating ${updatable.length} container(s)…`, 'info');
-  for (const c of updatable) {
+  // Fire all updates in parallel
+  await Promise.all(updatable.map(async c => {
     const r = await fetch('/api/update/' + encodeURIComponent(c.name), { method: 'POST' });
     const d = await r.json();
-    if (d.ok) toast(c.name + ' updated ✓', 'success');
-    else toast(c.name + ' failed: ' + d.error, 'error');
-  }
+    if (!d.ok) toast(c.name + ' failed: ' + d.error, 'error');
+  }));
   poll();
 }
 

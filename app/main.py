@@ -7,12 +7,13 @@ import socket
 import logging
 import json
 import os
+import tempfile
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
@@ -22,9 +23,12 @@ SETTINGS_FILE = "/data/settings.json"
 # ── state ─────────────────────────────────────────────────────────────────────
 container_cache: dict[str, dict] = {}
 cache_lock = threading.Lock()
+
+# Guarded by cache_lock — never mutate without holding it
 checking_set: set[str] = set()
-checking_all_flag = threading.Event()
 updating_set: set[str] = set()
+
+checking_all_flag = threading.Event()
 
 # ── self-detection ────────────────────────────────────────────────────────────
 def get_self_name() -> str:
@@ -56,9 +60,21 @@ def load_settings() -> dict:
         return dict(DEFAULT_SETTINGS)
 
 def save_settings(s: dict):
+    """Atomically write settings so a crash never corrupts the file."""
     os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)
-    with open(SETTINGS_FILE, "w") as f:
-        json.dump(s, f, indent=2)
+    dir_ = os.path.dirname(SETTINGS_FILE)
+    # Write to a temp file in the same directory, then rename (atomic on POSIX)
+    fd, tmp = tempfile.mkstemp(dir=dir_, prefix=".settings_", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(s, f, indent=2)
+        os.replace(tmp, SETTINGS_FILE)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 # ── image string helper ───────────────────────────────────────────────────────
 def get_image_str(c) -> str:
@@ -94,10 +110,8 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
     try:
         local_img = client.images.get(image_str)
         local_digests = local_img.attrs.get("RepoDigests") or []
-        # RepoDigests entries look like  repo@sha256:abc...
         local_digest = local_digests[0].split("@")[-1] if local_digests else ""
     except docker.errors.ImageNotFound:
-        # image not pulled locally yet → definitely needs a pull = update available
         log.info("Check %s → update_available (image not local)", name)
         return "update_available", ""
     except Exception as e:
@@ -125,7 +139,6 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
         return "error", f"Unexpected error: {str(e)[:120]}"
 
     if not remote_digest or not local_digest:
-        # can't compare — assume up to date to avoid false positives
         log.info("Check %s → unknown (could not compare digests)", name)
         return "up_to_date", ""
 
@@ -175,14 +188,16 @@ def snapshot_containers() -> list[dict]:
 
 # ── check workers ─────────────────────────────────────────────────────────────
 def _do_check_one(name: str, image_str: str):
-    checking_set.add(name)
+    with cache_lock:
+        checking_set.add(name)
     try:
         status, reason = pull_check(name, image_str)
         with cache_lock:
             container_cache[name] = {"update_status": status, "update_reason": reason}
         log.info("Check %s → %s%s", name, status, f" ({reason})" if reason else "")
     finally:
-        checking_set.discard(name)
+        with cache_lock:
+            checking_set.discard(name)
 
 def check_one(name: str):
     try:
@@ -191,8 +206,7 @@ def check_one(name: str):
         log.warning("check_one: container %r not found", name)
         return
     image_str = get_image_str(c)
-    t = threading.Thread(target=_do_check_one, args=(name, image_str), daemon=True)
-    t.start()
+    threading.Thread(target=_do_check_one, args=(name, image_str), daemon=True).start()
 
 def check_all():
     if checking_all_flag.is_set():
@@ -221,21 +235,44 @@ def check_all():
     threading.Thread(target=_worker, daemon=True).start()
 
 # ── update worker ─────────────────────────────────────────────────────────────
-def do_update(name: str) -> tuple[bool, str]:
+def _do_update(name: str) -> tuple[bool, str]:
+    """Pull and recreate a container, preserving its full config."""
     if name == SELF_NAME:
         return False, "Cannot update self"
-    updating_set.add(name)
+
+    with cache_lock:
+        updating_set.add(name)
     try:
-        c = client.containers.get(name)
+        try:
+            c = client.containers.get(name)
+        except docker.errors.NotFound:
+            return False, f"Container {name!r} not found"
+
         image_str = get_image_str(c)
         if not image_str:
             return False, "No pullable image tag"
 
-        log.info("Updating %s…", name)
+        log.info("Pulling new image for %s (%s)…", name, image_str)
         client.images.pull(image_str)
 
-        config = c.attrs.get("HostConfig", {})
-        net    = c.attrs.get("NetworkSettings", {}).get("Networks", {})
+        attrs      = c.attrs
+        cfg        = attrs.get("Config") or {}
+        host_cfg   = attrs.get("HostConfig") or {}
+        net_cfg    = attrs.get("NetworkSettings", {}).get("Networks", {})
+
+        # Reconstruct volume bindings — both bind-mounts and named volumes
+        volumes: dict[str, dict] = {}
+        for m in (attrs.get("Mounts") or []):
+            if m.get("Type") in ("bind", "volume"):
+                volumes[m["Source"]] = {
+                    "bind": m["Destination"],
+                    "mode": m.get("Mode", "rw"),
+                }
+
+        # Use the first network for containers.run(); attach extras afterwards
+        net_names = list(net_cfg.keys())
+        primary_net = net_names[0] if net_names else None
+
         c.stop()
         c.remove()
 
@@ -243,26 +280,42 @@ def do_update(name: str) -> tuple[bool, str]:
             image_str,
             detach=True,
             name=name,
-            hostname=c.attrs.get("Config", {}).get("Hostname", name),
-            restart_policy=config.get("RestartPolicy", {"Name": "unless-stopped"}),
-            ports=config.get("PortBindings") or {},
-            volumes={
-                m["Source"]: {"bind": m["Destination"], "mode": m["Mode"]}
-                for m in (c.attrs.get("Mounts") or [])
-                if m.get("Type") == "bind"
-            },
-            environment=c.attrs.get("Config", {}).get("Env") or [],
-            network=list(net.keys())[0] if net else None,
+            hostname=cfg.get("Hostname", name),
+            restart_policy=host_cfg.get("RestartPolicy") or {"Name": "unless-stopped"},
+            ports=host_cfg.get("PortBindings") or {},
+            volumes=volumes,
+            environment=cfg.get("Env") or [],
+            labels=cfg.get("Labels") or {},
+            network=primary_net,
+            cap_add=host_cfg.get("CapAdd") or [],
+            devices=host_cfg.get("Devices") or [],
+            sysctls=host_cfg.get("Sysctls") or {},
         )
+
+        # Re-attach any additional networks
+        for net_name in net_names[1:]:
+            try:
+                net_aliases = (net_cfg[net_name].get("Aliases") or [])
+                network = client.networks.get(net_name)
+                network.connect(new_c, aliases=net_aliases)
+            except Exception as e:
+                log.warning("Could not re-attach network %s to %s: %s", net_name, name, e)
+
         with cache_lock:
             container_cache[name] = {"update_status": "up_to_date", "update_reason": ""}
+
         log.info("Updated %s → %s", name, new_c.id[:12])
         return True, ""
     except Exception as e:
         log.error("Update %s failed: %s", name, e)
         return False, str(e)
     finally:
-        updating_set.discard(name)
+        with cache_lock:
+            updating_set.discard(name)
+
+def do_update_async(name: str):
+    """Fire-and-forget update; result is reflected in container_cache."""
+    threading.Thread(target=_do_update, args=(name,), daemon=True).start()
 
 # ── scheduler ─────────────────────────────────────────────────────────────────
 scheduler_lock = threading.Lock()
@@ -280,15 +333,15 @@ def rebuild_schedule():
             def auto_update_all():
                 for name, info in list(container_cache.items()):
                     if info.get("update_status") == "update_available" and name != SELF_NAME:
-                        threading.Thread(target=do_update, args=(name,), daemon=True).start()
+                        threading.Thread(target=_do_update, args=(name,), daemon=True).start()
             schedule.every(ui).minutes.do(auto_update_all)
             log.info("Scheduled auto-update every %d min", ui)
 
 def scheduler_loop():
     while True:
+        time.sleep(30)
         with scheduler_lock:
             schedule.run_pending()
-        time.sleep(30)
 
 # ── API ───────────────────────────────────────────────────────────────────────
 @app.route("/")
@@ -316,8 +369,9 @@ def api_check_one(name):
 def api_update(name):
     if name == SELF_NAME:
         return jsonify({"ok": False, "error": "Cannot update self"})
-    ok, err = do_update(name)
-    return jsonify({"ok": ok, "error": err})
+    # Run in background; UI polls for status changes
+    do_update_async(name)
+    return jsonify({"ok": True})
 
 @app.route("/api/settings", methods=["GET"])
 def api_settings_get():
@@ -325,7 +379,21 @@ def api_settings_get():
 
 @app.route("/api/settings", methods=["POST"])
 def api_settings_post():
-    s = request.get_json(force=True)
+    data = request.get_json(force=True) or {}
+
+    # Validate and sanitise — reject obviously bad values
+    def _int(val, default: int) -> int:
+        try:
+            v = int(val)
+            return max(0, v)
+        except (TypeError, ValueError):
+            return default
+
+    s = {
+        "check_interval_minutes":  _int(data.get("check_interval_minutes"),  0),
+        "update_interval_minutes": _int(data.get("update_interval_minutes"), 0),
+        "check_on_startup":        bool(data.get("check_on_startup", True)),
+    }
     save_settings(s)
     rebuild_schedule()
     return jsonify({"ok": True})
