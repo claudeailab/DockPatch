@@ -1,35 +1,46 @@
-# Dockpatch — Project Guidelines
+# CLAUDE.md — Project Rules & Guidelines
 
-## Docker build
-- Always build the image for both **x86 (amd64)** and **arm64**
-- Always host the image on the **GitHub Container Registry** (`ghcr.io/claudeailab/dockpatch`)
-- Always merge branches/pull requests and run the GitHub Actions build workflow after changes
+## Hosting
+- Always host the image on the GitHub Container Registry (ghcr.io/claudeailab/${project_name})
+
+## Branches & CI
+- Always merge branches and pull requests after changes
+- Always trigger / wait for the GitHub Actions build to complete after merging
+
+## Web App Quality
+- The web app must always be functional and intuitive on both desktop and mobile
+- Test layouts and interactions for both screen sizes before pushing
+
+## Docker Build
+- The project is always packaged as a Docker container
+- Always build for both **x86** (amd64) and **ARM** (arm64/v8) platforms
 
 ## Versioning
-- Always display a discreet version number in the web UI
-- Always bump the version with each push
+- Always display a discreet version number somewhere on the web app (e.g. footer)
+- Always bump the version number with every push
 
-## UI / UX
-- The web app must always be functional and intuitive on **desktop and mobile**
+## README Requirements
+- Maintain a **Features** section in README.md with bullet points and a short description of each feature
+- Include an **Updating** section in README.md with the following command (replacing `${project_name}` with the actual project name):
 
-## README — Updating section
-The README must always include an **Updating** section with:
 ```bash
-docker compose pull dockpatch && docker compose up -d dockpatch
+docker compose pull ${project_name} && docker compose up -d ${project_name}
 ```
 
-## docker-compose.yml template
+## docker-compose.yml Template
+Always use the following template for `docker-compose.yml`, replacing `${project_name}` with the actual project name and `${port}` with the port specified for the project:
+
 ```yaml
-dockpatch:
-  image: ghcr.io/claudeailab/dockpatch
-  container_name: dockpatch
-  hostname: dockpatch
-  restart: unless-stopped
-  user: "0"
-  environment:
-    TZ: ${TZ}
-  ports:
-    - 8093:8093
-  volumes:
-    - ./config/dockpatch:/data
+  ${project_name}:
+    image: ghcr.io/claudeailab/${project_name}
+    container_name: ${project_name}
+    hostname: ${project_name}
+    restart: unless-stopped
+    user: "0"
+    environment:
+      TZ: ${TZ}
+    ports:
+      - ${port}:${port}
+    volumes:
+      - ./config/${project_name}:/data
 ```
