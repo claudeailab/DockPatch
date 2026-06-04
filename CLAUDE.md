@@ -1,5 +1,8 @@
 # CLAUDE.md — Project Rules & Guidelines
 
+## Project Description
+**Dockpatch** is a lightweight self-hosted web app that monitors your Docker containers for image updates and can apply them on demand or on a schedule. It connects directly to the Docker socket, checks registries for newer image digests, and lets you update individual containers or all of them at once — all from a clean, responsive web UI. It also protects itself from accidental self-updates while running.
+
 ## Hosting
 - Always host the image on the GitHub Container Registry (ghcr.io/claudeailab/${project_name})
 
