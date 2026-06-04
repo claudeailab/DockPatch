@@ -692,7 +692,6 @@ async function checkOne(name) {
 }
 
 async function updateOne(name) {
-  if (!confirm('Update ' + name + '? The container will be restarted.')) return;
   toast('Updating ' + name + '…', 'info');
   const r = await fetch('/api/update/' + encodeURIComponent(name), { method: 'POST' });
   const d = await r.json();
