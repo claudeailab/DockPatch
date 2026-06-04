@@ -45,20 +45,21 @@
     .header-right { display: flex; align-items: center; gap: 8px; }
     .version { font-size: 11px; color: var(--muted); }
 
-    /* ── scanning banner ── */
-    #scanning-banner {
+    /* ── scanning pill (discreet, inside header-right) ── */
+    #scanning-pill {
       display: none;
-      background: linear-gradient(90deg, #1e3a5f, #1a2d4a);
-      border-bottom: 1px solid #2d5a8e;
-      padding: 7px 20px;
       align-items: center;
-      gap: 10px;
-      font-size: 13px;
+      gap: 6px;
+      background: #1e3a5f;
+      border: 1px solid #2d5a8e;
+      border-radius: 20px;
+      padding: 3px 10px 3px 7px;
+      font-size: 12px;
       color: #93c5fd;
     }
-    #scanning-banner.visible { display: flex; }
-    .spinner {
-      width: 15px; height: 15px;
+    #scanning-pill.visible { display: flex; }
+    .pill-spinner {
+      width: 12px; height: 12px;
       border: 2px solid #3b82f640;
       border-top-color: #3b82f6;
       border-radius: 50%;
@@ -66,18 +67,6 @@
       flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .banner-bar { flex: 1; height: 3px; background: #1e3a5f; border-radius: 2px; overflow: hidden; }
-    .banner-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #3b82f6, #60a5fa);
-      border-radius: 2px;
-      width: 40%;
-      animation: indeterminate 1.5s ease-in-out infinite;
-    }
-    @keyframes indeterminate {
-      0%   { transform: translateX(-150%); }
-      100% { transform: translateX(400%); }
-    }
 
     /* ── main ── */
     main { padding: 14px 20px; max-width: 1200px; margin: 0 auto; }
@@ -98,14 +87,19 @@
     .stat-icon { font-size: 18px; }
     .stat-val  { font-size: 22px; font-weight: 700; line-height: 1; }
     .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    /* colour accents on stat cards */
     .stat.c-updates  { border-color: #92400e; }
     .stat.c-uptodate { border-color: #166534; }
     .stat.c-unknown  { border-color: #374151; }
 
     /* ── toolbar ── */
-    .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-    .toolbar-left { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+    /* single row: filter | Check all | Update all */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
     input[type="text"] {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -113,7 +107,9 @@
       color: var(--text);
       padding: 6px 10px;
       font-size: 13px;
-      width: 200px;
+      flex: 1;
+      min-width: 140px;
+      max-width: 280px;
       outline: none;
     }
     input[type="text"]:focus { border-color: var(--accent); }
@@ -198,22 +194,18 @@
       gap: 20px;
       box-shadow: 0 24px 48px #00000066;
     }
-    .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .modal-title { font-size: 16px; font-weight: 700; }
-    .modal-close {
+    .modal-header { display: flex; align-items: center; justify-content: space-between; }
+    .modal-title  { font-size: 16px; font-weight: 700; }
+    .modal-close  {
       background: none; border: none; color: var(--muted);
       font-size: 20px; cursor: pointer; line-height: 1;
       padding: 2px 6px; border-radius: 4px;
     }
     .modal-close:hover { color: var(--text); background: var(--border); }
-    .modal-body { display: flex; flex-direction: column; gap: 16px; }
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    .form-hint  { font-size: 11px; color: var(--muted); }
+    .modal-body  { display: flex; flex-direction: column; gap: 16px; }
+    .form-group  { display: flex; flex-direction: column; gap: 6px; }
+    .form-label  { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .form-hint   { font-size: 11px; color: var(--muted); }
     .form-group input[type="number"] {
       background: var(--bg);
       border: 1px solid var(--border);
@@ -225,9 +217,8 @@
       width: 100%;
     }
     .form-group input[type="number"]:focus { border-color: var(--accent); }
-    .toggle-row { display: flex; align-items: center; gap: 10px; }
+    .toggle-row  { display: flex; align-items: center; gap: 10px; }
     .toggle-label { font-size: 13px; color: var(--text); }
-    /* toggle switch */
     .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
@@ -268,7 +259,7 @@
       .stat { min-width: 100px; padding: 7px 10px; }
       .stat-val { font-size: 20px; }
       .image-cell, th.hide-mob, td.hide-mob { display: none; }
-      input[type="text"] { width: 140px; }
+      input[type="text"] { max-width: 100%; }
     }
   </style>
 </head>
@@ -278,17 +269,15 @@
 <header>
   <div class="logo"><span>🐳</span> Dockwatch</div>
   <div class="header-right">
+    <!-- discreet scanning pill -->
+    <div id="scanning-pill">
+      <div class="pill-spinner"></div>
+      <span>Scanning…</span>
+    </div>
     <button class="btn btn-icon btn-sm" onclick="openSettings()">⚙ Settings</button>
     <span class="version">v{{ version }}</span>
   </div>
 </header>
-
-<!-- ── scanning banner ── -->
-<div id="scanning-banner">
-  <div class="spinner"></div>
-  <span id="banner-text">Scanning containers for updates…</span>
-  <div class="banner-bar"><div class="banner-fill"></div></div>
-</div>
 
 <main>
 
@@ -316,12 +305,11 @@
     </div>
   </div>
 
-  <!-- toolbar -->
+  <!-- toolbar: filter | check all | update all — one single row -->
   <div class="toolbar">
-    <div class="toolbar-left">
-      <input type="text" id="search" placeholder="🔍 Filter containers…" oninput="renderTable()">
-      <button class="btn btn-primary btn-sm" id="check-all-btn" onclick="checkAll()">🔍 Check all</button>
-    </div>
+    <input type="text" id="search" placeholder="🔍 Filter containers…" oninput="renderTable()">
+    <button class="btn btn-primary btn-sm" id="check-all-btn" onclick="checkAll()">🔍 Check all</button>
+    <button class="btn btn-success btn-sm" id="update-all-btn" onclick="updateAll()" disabled>⬆ Update all</button>
   </div>
 
   <!-- table -->
@@ -358,7 +346,7 @@
       <div class="form-group">
         <label class="form-label">Auto-update interval</label>
         <input type="number" id="cfg-update" min="0" placeholder="e.g. 1440">
-        <span class="form-hint">Minutes between automatic updates for containers with updates available. 0 = disabled.</span>
+        <span class="form-hint">Minutes between automatic updates for containers with available updates. 0 = disabled.</span>
       </div>
       <div class="form-group">
         <label class="form-label">Startup behaviour</label>
@@ -401,8 +389,8 @@ function backdropClose(e) {
 async function loadSettings() {
   const r = await fetch('/api/settings');
   const d = await r.json();
-  document.getElementById('cfg-check').value    = d.check_interval_minutes  || '';
-  document.getElementById('cfg-update').value   = d.update_interval_minutes || '';
+  document.getElementById('cfg-check').value     = d.check_interval_minutes  || '';
+  document.getElementById('cfg-update').value    = d.update_interval_minutes || '';
   document.getElementById('cfg-startup').checked = !!d.check_on_startup;
 }
 
@@ -426,16 +414,19 @@ async function poll() {
     containers = d.containers;
     const isChecking = d.checking_all;
 
-    const banner = document.getElementById('scanning-banner');
+    const pill = document.getElementById('scanning-pill');
     if (isChecking) {
-      banner.classList.add('visible');
+      pill.classList.add('visible');
     } else {
       if (wasChecking) toast('Update check complete', 'success');
-      banner.classList.remove('visible');
+      pill.classList.remove('visible');
     }
     wasChecking = isChecking;
 
-    document.getElementById('check-all-btn').disabled = isChecking;
+    const hasUpdates = containers.some(c => c.update_status === 'update_available' && !c.is_self);
+    document.getElementById('check-all-btn').disabled  = isChecking;
+    document.getElementById('update-all-btn').disabled = !hasUpdates || isChecking;
+
     updateStats();
     renderTable();
   } catch(e) { console.error(e); }
@@ -447,13 +438,12 @@ function updateStats() {
   const running  = containers.filter(c => c.status === 'running').length;
   const updates  = containers.filter(c => c.update_status === 'update_available').length;
   const uptodate = containers.filter(c => c.update_status === 'up_to_date').length;
-  // unknown = anything that isn't confirmed up-to-date, update-available, or error
   const checked  = containers.filter(c => ['up_to_date','update_available','error'].includes(c.update_status)).length;
   const unknown  = total - checked;
 
-  document.getElementById('s-total').textContent   = total;
-  document.getElementById('s-running').textContent = running;
-  document.getElementById('s-updates').textContent = updates;
+  document.getElementById('s-total').textContent    = total;
+  document.getElementById('s-running').textContent  = running;
+  document.getElementById('s-updates').textContent  = updates;
   document.getElementById('s-uptodate').textContent = uptodate;
   document.getElementById('s-unknown').textContent  = unknown;
 }
@@ -496,25 +486,30 @@ function renderTable() {
       updBadge = {
         up_to_date:       '<span class="badge badge-uptodate">✓ Up to date</span>',
         update_available: '<span class="badge badge-available">⬆ Update available</span>',
-        error:            `<span class="badge badge-error" title="${c.update_reason}">✕ Error</span>`,
+        error:            `<span class="badge badge-error" title="${escHtml(c.update_reason || '')}">✕ Error</span>`,
       }[c.update_status] || '<span class="badge badge-unknown">— Unknown</span>';
     }
 
     const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
     const actions = c.is_self
       ? '<span class="self-lock" title="Update dockwatch manually">🔒</span>'
-      : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${c.name}')" title="Check for update">🔍</button>
-         <button class="btn btn-success btn-sm" onclick="updateOne('${c.name}')" ${c.update_status !== 'update_available' ? 'disabled' : ''}>⬆ Update</button>`;
+      : `<button class="btn btn-ghost btn-sm" onclick="checkOne('${escAttr(c.name)}')" title="Check for update">🔍</button>
+         <button class="btn btn-success btn-sm" onclick="updateOne('${escAttr(c.name)}')" ${c.update_status !== 'update_available' ? 'disabled' : ''}>Update</button>`;
 
     return `<tr>
-      <td><div class="name-cell">${c.name}${selfTag}</div></td>
-      <td class="image-cell hide-mob" title="${c.image}">${c.image}</td>
+      <td><div class="name-cell">${escHtml(c.name)}${selfTag}</div></td>
+      <td class="image-cell hide-mob" title="${escAttr(c.image)}">${escHtml(c.image)}</td>
       <td>${stateBadge}</td>
       <td>${updBadge}</td>
       <td><div class="actions">${actions}</div></td>
     </tr>`;
   }).join('');
 }
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) { return escHtml(s); }
 
 // ── actions ──
 async function checkAll() {
@@ -537,6 +532,20 @@ async function updateOne(name) {
   poll();
 }
 
+async function updateAll() {
+  const updatable = containers.filter(c => c.update_status === 'update_available' && !c.is_self);
+  if (!updatable.length) return;
+  if (!confirm(`Update ${updatable.length} container(s)? Each will be restarted.`)) return;
+  toast(`Updating ${updatable.length} container(s)…`, 'info');
+  for (const c of updatable) {
+    const r = await fetch('/api/update/' + encodeURIComponent(c.name), { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) toast(c.name + ' updated ✓', 'success');
+    else toast(c.name + ' failed: ' + d.error, 'error');
+  }
+  poll();
+}
+
 function toast(msg, type = 'info') {
   const el = document.createElement('div');
   el.className = 'toast ' + type;
@@ -545,7 +554,6 @@ function toast(msg, type = 'info') {
   setTimeout(() => el.remove(), 4000);
 }
 
-// close modal on Escape
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSettings(); });
 
 poll();
