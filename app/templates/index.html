@@ -130,17 +130,7 @@
     /* ── container grid ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
-    }
-    @media (max-width: 1100px) {
-      .grid { grid-template-columns: repeat(3, 1fr); }
-    }
-    @media (max-width: 750px) {
-      .grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 480px) {
-      .grid { grid-template-columns: 1fr; }
     }
 
     /* ── container card ── */
@@ -281,6 +271,20 @@
     .switch input:checked + .slider:before { transform: translateX(16px); }
     .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
 
+    /* ── columns input row ── */
+    .cols-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cols-row input[type="number"] {
+      width: 70px !important;
+    }
+    .cols-auto-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
     /* ── toast ── */
     #toast-container {
       position: fixed; bottom: 20px; right: 20px;
@@ -387,6 +391,13 @@
           <span class="toggle-label">Check for updates on start</span>
         </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Cards per row</label>
+        <div class="cols-row">
+          <input type="number" id="cfg-cols" min="1" max="12" placeholder="Auto">
+          <span class="cols-auto-label">Leave blank for automatic (responsive)</span>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" onclick="closeSettings()">Cancel</button>
@@ -401,9 +412,40 @@
 let containers = [];
 let wasChecking = false;
 
+// ── grid columns ──
+const COLS_KEY = 'dockpatch_cols';
+
+function applyColumns() {
+  const saved = localStorage.getItem(COLS_KEY);
+  const grid  = document.getElementById('grid');
+  if (saved && parseInt(saved) >= 1) {
+    grid.style.gridTemplateColumns = `repeat(${parseInt(saved)}, 1fr)`;
+  } else {
+    // responsive default
+    grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    applyResponsiveCols();
+  }
+}
+
+function applyResponsiveCols() {
+  const saved = localStorage.getItem(COLS_KEY);
+  if (saved && parseInt(saved) >= 1) return; // manual override active
+  const w    = window.innerWidth;
+  const grid = document.getElementById('grid');
+  if      (w <= 480)  grid.style.gridTemplateColumns = '1fr';
+  else if (w <= 750)  grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+  else if (w <= 1100) grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+  else                grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+}
+
+window.addEventListener('resize', applyResponsiveCols);
+applyColumns();
+
 // ── modal ──
 function openSettings() {
   loadSettings();
+  const saved = localStorage.getItem(COLS_KEY);
+  document.getElementById('cfg-cols').value = (saved && parseInt(saved) >= 1) ? parseInt(saved) : '';
   document.getElementById('settings-modal').classList.add('open');
 }
 function closeSettings() {
@@ -422,6 +464,15 @@ async function loadSettings() {
 }
 
 async function saveSettings() {
+  // persist columns to localStorage
+  const colsVal = parseInt(document.getElementById('cfg-cols').value);
+  if (colsVal >= 1) {
+    localStorage.setItem(COLS_KEY, colsVal);
+  } else {
+    localStorage.removeItem(COLS_KEY);
+  }
+  applyColumns();
+
   const payload = {
     check_interval_minutes:  parseInt(document.getElementById('cfg-check').value)  || 0,
     update_interval_minutes: parseInt(document.getElementById('cfg-update').value) || 0,
@@ -599,6 +650,7 @@ function toast(msg, type = 'info') {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSettings(); });
 
+applyColumns();
 poll();
 setInterval(poll, 4000);
 </script>
