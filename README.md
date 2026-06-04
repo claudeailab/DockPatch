@@ -8,7 +8,7 @@ A lightweight self-hosted web app that monitors your Docker containers for image
 
 - 🔍 **Check for updates** on demand (per container or all at once) or on a configurable schedule
 - ⬆️ **Apply updates** on demand or automatically on a configurable minutes interval
-- 🔒 **Self-update protection** — dockwatch never updates itself while running
+- 🔒 **Self-update protection** — dockwatch auto-detects itself and never updates its own container while running
 - 📱 Responsive UI — works great on desktop and mobile
 - 🔔 Toast notifications for all actions
 
@@ -23,9 +23,6 @@ dockwatch:
   user: "0"
   environment:
     TZ: ${TZ}
-    SELF_NAME: dockwatch
-    CHECK_SCHEDULE_MINUTES: 60
-    UPDATE_SCHEDULE_MINUTES: ""       # e.g. "120" to auto-update every 2 hours
   ports:
     - 8093:8093
   volumes:
@@ -39,20 +36,12 @@ docker compose up -d dockwatch
 
 Then open **http://your-server:8093**
 
-## Environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `TZ` | UTC | Timezone |
-| `SELF_NAME` | `dockwatch` | Container name of this app (prevents self-update) |
-| `CHECK_SCHEDULE_MINUTES` | `60` | How often to auto-check for updates (minutes) |
-| `UPDATE_SCHEDULE_MINUTES` | *(blank)* | How often to auto-apply updates (minutes). Leave blank to disable. |
-
 > **Note:** The Docker socket (`/var/run/docker.sock`) must be mounted — this is how dockwatch talks to Docker.
+> Schedules (check interval and auto-update interval) are configured entirely from the UI — no environment variables needed.
 
-## Self-update
+## Self-update protection
 
-Dockwatch intentionally **cannot update itself** while running. To update dockwatch, run the commands below — it will pull the new image and recreate the container without any data loss.
+Dockwatch automatically detects its own container at startup by matching its hostname to the running container list. It will never update itself while running. To update dockwatch, run the commands below — it will pull the new image and recreate the container without any data loss.
 
 ## Updating
 

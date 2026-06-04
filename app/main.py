@@ -4,25 +4,39 @@ import threading
 import schedule
 import time
 import os
+import socket
 import logging
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 client = docker.from_env()
 
-# The container name of dockwatch itself — never update this one
-SELF_NAME = os.environ.get("SELF_NAME", "dockwatch")
+
+def detect_self_name():
+    """Detect our own container name by matching hostname (container ID) against running containers."""
+    try:
+        hostname = socket.gethostname()  # Docker sets this to the container ID (short)
+        for c in client.containers.list():
+            if c.id.startswith(hostname) or hostname.startswith(c.short_id):
+                log.info("Self-detected container name: %s", c.name)
+                return c.name
+    except Exception as e:
+        log.warning("Could not auto-detect self name: %s", e)
+    return "dockwatch"  # safe fallback
+
+
+SELF_NAME = detect_self_name()
 
 # In-memory state
 state = {
     "containers": {},       # name -> {image, current_digest, latest_digest, status, last_checked}
     "last_full_check": None,
-    "check_schedule": int(os.environ.get("CHECK_SCHEDULE_MINUTES", 60)),
-    "update_schedule": int(os.environ.get("UPDATE_SCHEDULE_MINUTES", 0)),  # minutes interval, 0 = disabled
+    "check_schedule": 0,    # minutes, 0 = disabled (UI-only config)
+    "update_schedule": 0,   # minutes, 0 = disabled (UI-only config)
     "updating": [],         # names currently being updated
     "checking": False,
 }
@@ -37,10 +51,8 @@ def get_running_containers():
     """Return all running containers that have a registry image."""
     result = []
     for c in client.containers.list():
-        image_tags = c.image.tags
-        if not image_tags:
-            continue  # locally built / untagged — skip
-        result.append(c)
+        if c.image.tags:
+            result.append(c)
     return result
 
 
@@ -51,7 +63,7 @@ def pull_latest_digest(image_tag: str):
         digests = img.attrs.get("RepoDigests", [])
         return digests[0] if digests else None
     except Exception as e:
-        log.warning(f"Could not pull {image_tag}: {e}")
+        log.warning("Could not pull %s: %s", image_tag, e)
         return None
 
 
@@ -95,6 +107,8 @@ def check_container(name: str, image_tag: str):
 def check_all():
     """Check every running container for updates."""
     with state_lock:
+        if state["checking"]:
+            return
         state["checking"] = True
     try:
         containers = get_running_containers()
@@ -138,27 +152,23 @@ def update_container(name: str):
 
         image_tag = c.image.tags[0]
 
-        # Pull fresh image
         log.info("Pulling %s for %s", image_tag, name)
         client.images.pull(image_tag)
 
-        # Grab config for recreate
         attrs = c.attrs
         host_config = attrs["HostConfig"]
         config = attrs["Config"]
 
-        # Stop & remove old container
         log.info("Stopping %s", name)
         c.stop(timeout=30)
         c.remove()
 
-        # Recreate
         log.info("Recreating %s", name)
         new_c = client.containers.run(
             image_tag,
             detach=True,
             name=name,
-            hostname=attrs["Config"].get("Hostname", name),
+            hostname=config.get("Hostname", name),
             restart_policy=host_config.get("RestartPolicy", {"Name": "unless-stopped"}),
             environment=config.get("Env", []),
             ports=host_config.get("PortBindings", {}),
@@ -167,7 +177,6 @@ def update_container(name: str):
         )
         log.info("Started %s as %s", name, new_c.id[:12])
 
-        # Re-check state
         check_container(name, image_tag)
         return {"ok": True}
 
@@ -187,10 +196,8 @@ def update_all():
             name for name, info in state["containers"].items()
             if info["status"] == "update-available" and name != SELF_NAME
         ]
-    results = {}
     for name in targets:
-        results[name] = update_container(name)
-    return results
+        update_container(name)
 
 
 # ---------------------------------------------------------------------------
@@ -207,17 +214,20 @@ def setup_schedules():
     schedule.clear()
 
     check_interval = state["check_schedule"]
-    schedule.every(check_interval).minutes.do(
-        lambda: threading.Thread(target=check_all, daemon=True).start()
-    )
-    log.info("Check schedule: every %d minutes", check_interval)
+    if check_interval and int(check_interval) > 0:
+        schedule.every(int(check_interval)).minutes.do(
+            lambda: threading.Thread(target=check_all, daemon=True).start()
+        )
+        log.info("Check schedule: every %d minutes", check_interval)
+    else:
+        log.info("Check schedule: disabled")
 
     update_interval = state["update_schedule"]
     if update_interval and int(update_interval) > 0:
         schedule.every(int(update_interval)).minutes.do(
             lambda: threading.Thread(target=update_all, daemon=True).start()
         )
-        log.info("Auto-update schedule: every %d minutes", int(update_interval))
+        log.info("Auto-update schedule: every %d minutes", update_interval)
     else:
         log.info("Auto-update schedule: disabled")
 
@@ -265,7 +275,9 @@ def api_check():
         ).start()
         return jsonify({"ok": True, "message": f"Checking {name}"})
     else:
-        if state["checking"]:
+        with state_lock:
+            already = state["checking"]
+        if already:
             return jsonify({"ok": False, "error": "Check already in progress"}), 409
         threading.Thread(target=check_all, daemon=True).start()
         return jsonify({"ok": True, "message": "Checking all containers"})
@@ -288,12 +300,12 @@ def api_update():
 @app.route("/api/schedule", methods=["POST"])
 def api_schedule():
     data = request.get_json(silent=True) or {}
-    check_mins = data.get("check_schedule")
+    check_mins  = data.get("check_schedule")
     update_mins = data.get("update_schedule")
 
     if check_mins is not None:
         with state_lock:
-            state["check_schedule"] = int(check_mins)
+            state["check_schedule"] = int(check_mins) if str(check_mins).strip() else 0
     if update_mins is not None:
         with state_lock:
             state["update_schedule"] = int(update_mins) if str(update_mins).strip() else 0
@@ -309,6 +321,5 @@ def api_schedule():
 if __name__ == "__main__":
     setup_schedules()
     threading.Thread(target=run_scheduler, daemon=True).start()
-    # Initial check on startup
     threading.Thread(target=check_all, daemon=True).start()
     app.run(host="0.0.0.0", port=8093, debug=False)
