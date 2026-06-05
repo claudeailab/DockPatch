@@ -136,6 +136,8 @@
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
     .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); filter: none; }
+    .btn-settings { background: #1e2a3a; color: var(--text); border: 1px solid #3b82f680; }
+    .btn-settings:hover:not(:disabled) { background: #243448; border-color: var(--accent); filter: none; }
     .btn-success { background: #16803c; color: #fff; }
     .btn-sm { padding: 5px 10px; font-size: 12px; }
 
@@ -335,7 +337,7 @@
       <div class="pill-spinner"></div>
       <span>Scanning…</span>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="openSettings()">⚙ Settings</button>
+    <button class="btn btn-settings btn-sm" onclick="openSettings()">⚙ Settings</button>
     <div class="version-wrap">
       <span class="version">v{{ version }}</span>
       <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener" class="github-link" title="View on GitHub">
