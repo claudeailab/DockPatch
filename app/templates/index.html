@@ -364,10 +364,6 @@
       <span class="stat-icon">📦</span>
       <div><div class="stat-val" id="s-total">—</div><div class="stat-label">Total</div></div>
     </div>
-    <div class="stat">
-      <span class="stat-icon">🟢</span>
-      <div><div class="stat-val" id="s-running">—</div><div class="stat-label">Running</div></div>
-    </div>
     <div class="stat c-updates">
       <span class="stat-icon">⬆️</span>
       <div><div class="stat-val" id="s-updates">—</div><div class="stat-label">Updates available</div></div>
@@ -608,7 +604,6 @@ async function poll() {
 function updateStats(isChecking) {
   const peers    = containers.filter(c => !c.is_self);
   const total    = peers.length;
-  const running  = peers.filter(c => c.status === 'running').length;
   const updates  = peers.filter(c => c.update_status === 'update_available').length;
   const uptodate = peers.filter(c => c.update_status === 'up_to_date').length;
   const unknown  = peers.filter(c => c.update_status === 'unknown').length;
@@ -617,7 +612,6 @@ function updateStats(isChecking) {
   const unknownDisplay = isChecking ? (unknown + checking) : unknown;
 
   animateStat('s-total',    total);
-  animateStat('s-running',  running);
   animateStat('s-updates',  updates);
   animateStat('s-uptodate', uptodate);
   animateStat('s-unknown',  unknownDisplay);
