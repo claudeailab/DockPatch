@@ -326,53 +326,6 @@
       .stat-val { font-size: 18px; }
       .toolbar-search { width: 140px; }
     }
-    /* ── update progress modal ── */
-    #update-modal-backdrop {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,.65); backdrop-filter: blur(3px);
-      z-index: 200; align-items: center; justify-content: center;
-    }
-    #update-modal-backdrop.visible { display: flex; }
-    #update-modal {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; width: min(680px, 94vw); max-height: 80vh;
-      display: flex; flex-direction: column; overflow: hidden;
-      box-shadow: 0 24px 64px rgba(0,0,0,.6);
-    }
-    #update-modal-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px; border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    #update-modal-title { font-weight: 600; font-size: .95rem; }
-    #update-modal-close {
-      background: none; border: none; color: var(--muted);
-      font-size: 1.2rem; cursor: pointer; line-height: 1; padding: 2px 6px;
-      border-radius: 4px;
-    }
-    #update-modal-close:hover { color: var(--text); background: var(--border); }
-    #update-modal-body {
-      flex: 1; overflow-y: auto; padding: 14px 20px;
-      font-family: 'Courier New', monospace; font-size: .78rem;
-      line-height: 1.6; color: #c9d1d9; background: #0d1117;
-    }
-    .log-line         { white-space: pre-wrap; word-break: break-all; }
-    .log-line.log-ok      { color: #3fb950; }
-    .log-line.log-err     { color: #f85149; }
-    .log-line.log-info    { color: #58a6ff; }
-    .log-line.log-section { color: #79c0ff; font-weight: 600; margin-top: .5rem; }
-    #update-modal-footer {
-      padding: 12px 20px; border-top: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-      flex-shrink: 0; gap: 10px;
-    }
-    #update-modal-status { font-size: .82rem; color: var(--muted); }
-    #update-modal-spinner {
-      width: 14px; height: 14px; border: 2px solid var(--border);
-      border-top-color: var(--accent); border-radius: 50%;
-      animation: spin .7s linear infinite; flex-shrink: 0;
-    }
-    #update-modal-spinner.hidden { display: none; }
   </style>
 </head>
 <body>
@@ -760,68 +713,13 @@ async function checkOne(btn, name) {
   toast('Checking ' + name + '…', 'info');
 }
 
-// ── update progress modal ──
-let _modalStreams = []; // active EventSource objects
-
-function openUpdateModal(title) {
-  document.getElementById('update-modal-title').textContent = title;
-  document.getElementById('update-modal-body').innerHTML = '';
-  document.getElementById('update-modal-status').textContent = 'In progress…';
-  document.getElementById('update-modal-spinner').style.display = 'block';
-  document.getElementById('update-modal-close').disabled = true;
-  document.getElementById('update-modal-backdrop').classList.add('visible');
-}
-
-function closeUpdateModal() {
-  _modalStreams.forEach(es => es.close());
-  _modalStreams = [];
-  document.getElementById('update-modal-backdrop').classList.remove('visible');
-}
-
-function appendModalLine(text, cls) {
-  const body = document.getElementById('update-modal-body');
-  const line = document.createElement('div');
-  line.className = 'log-line' + (cls ? ' ' + cls : '');
-  line.textContent = text;
-  body.appendChild(line);
-  body.scrollTop = body.scrollHeight;
-}
-
-function streamContainerLog(name, onDone) {
-  const es = new EventSource('/api/update-log/' + encodeURIComponent(name));
-  _modalStreams.push(es);
-  es.addEventListener('log', e => appendModalLine(e.data));
-  es.addEventListener('done', e => {
-    const ok = e.data === 'ok';
-    appendModalLine(ok ? '✅ Done' : '❌ Failed', ok ? 'log-ok' : 'log-err');
-    es.close();
-    if (onDone) onDone(ok);
-  });
-  es.onerror = () => {
-    appendModalLine('⚠️ Connection lost', 'log-err');
-    es.close();
-    if (onDone) onDone(false);
-  };
-}
-
 async function updateOne(btn, name) {
   btn.disabled = true;
-  openUpdateModal('Updating ' + name);
-  let settled = false;
-  const finish = (ok) => {
-    if (settled) return; settled = true;
-    document.getElementById('update-modal-status').textContent = ok ? 'Complete' : 'Failed';
-    document.getElementById('update-modal-spinner').style.display = 'none';
-    document.getElementById('update-modal-close').disabled = false;
-    poll();
-  };
-  streamContainerLog(name, finish);
+  toast('Updating ' + name + '…', 'info');
   const r = await fetch('/api/update/' + encodeURIComponent(name), { method: 'POST' });
   const d = await r.json();
-  if (!d.ok) {
-    appendModalLine('❌ ' + d.error, 'log-err');
-    finish(false);
-  }
+  if (!d.ok) toast('Update failed: ' + d.error, 'error');
+  poll();
 }
 
 async function updateAll(btn) {
@@ -830,32 +728,14 @@ async function updateAll(btn) {
   if (!confirm(`Update ${updatable.length} container(s)? Each will be restarted.`)) return;
   btn.disabled = true;
   document.getElementById('check-all-btn').disabled = true;
+  // Disable all per-container update buttons immediately
   document.querySelectorAll('.btn-success.btn-sm').forEach(b => b.disabled = true);
-
-  openUpdateModal(`Updating ${updatable.length} container(s)…`);
-
-  let completed = 0;
-  const total = updatable.length;
-
-  const runOne = (c) => new Promise(resolve => {
-    appendModalLine(`▶ Starting ${c.name}…`, 'log-section');
-    streamContainerLog(c.name, (ok) => {
-      completed++;
-      document.getElementById('update-modal-status').textContent =
-        `${completed} / ${total} done`;
-      resolve(ok);
-    });
-    fetch('/api/update/' + encodeURIComponent(c.name), { method: 'POST' })
-      .then(r => r.json())
-      .then(d => { if (!d.ok) appendModalLine(`❌ ${c.name}: ${d.error}`, 'log-err'); });
-  });
-
-  // Run sequentially so logs stay readable
-  for (const c of updatable) await runOne(c);
-
-  document.getElementById('update-modal-spinner').style.display = 'none';
-  document.getElementById('update-modal-status').textContent = `All ${total} done`;
-  document.getElementById('update-modal-close').disabled = false;
+  toast(`Updating ${updatable.length} container(s)…`, 'info');
+  await Promise.all(updatable.map(async c => {
+    const r = await fetch('/api/update/' + encodeURIComponent(c.name), { method: 'POST' });
+    const d = await r.json();
+    if (!d.ok) toast(c.name + ' failed: ' + d.error, 'error');
+  }));
   poll();
 }
 
@@ -873,19 +753,5 @@ applyColumns();
 poll();
 setInterval(poll, 4000);
 </script>
-<!-- ── update progress modal ── -->
-<div id="update-modal-backdrop">
-  <div id="update-modal">
-    <div id="update-modal-header">
-      <span id="update-modal-title">Updating…</span>
-      <button id="update-modal-close" onclick="closeUpdateModal()" title="Close">✕</button>
-    </div>
-    <div id="update-modal-body"></div>
-    <div id="update-modal-footer">
-      <span id="update-modal-status">In progress…</span>
-      <div id="update-modal-spinner"></div>
-    </div>
-  </div>
-</div>
 </body>
 </html>
