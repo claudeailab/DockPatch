@@ -27,6 +27,8 @@ cache_lock = threading.Lock()
 # Guarded by cache_lock — never mutate without holding it
 checking_set: set[str] = set()
 updating_set: set[str] = set()
+update_logs: dict[str, list[str]] = {}   # name -> list of log line strings
+update_done: dict[str, bool] = {}        # name -> True when finished
 
 checking_all_flag = threading.Event()
 
@@ -235,6 +237,13 @@ def check_all():
     threading.Thread(target=_worker, daemon=True).start()
 
 # ── update worker ─────────────────────────────────────────────────────────────
+def _emit(name: str, line: str):
+    """Append a log line to the update log buffer for a container."""
+    log.info("[%s] %s", name, line)
+    with cache_lock:
+        update_logs.setdefault(name, []).append(line)
+
+
 def _do_update(name: str) -> tuple[bool, str]:
     """Pull and recreate a container, preserving its full config."""
     if name == SELF_NAME:
@@ -242,6 +251,8 @@ def _do_update(name: str) -> tuple[bool, str]:
 
     with cache_lock:
         updating_set.add(name)
+        update_logs[name] = []
+        update_done[name] = False
     try:
         try:
             c = client.containers.get(name)
@@ -252,8 +263,21 @@ def _do_update(name: str) -> tuple[bool, str]:
         if not image_str:
             return False, "No pullable image tag"
 
-        log.info("Pulling new image for %s (%s)…", name, image_str)
-        client.images.pull(image_str)
+        _emit(name, f"⬇️  Pulling image {image_str}…")
+        for chunk in client.api.pull(image_str, stream=True, decode=True):
+            status  = chunk.get("status", "")
+            prog    = chunk.get("progressDetail", {})
+            cid     = chunk.get("id", "")
+            current = prog.get("current")
+            total   = prog.get("total")
+            if current and total and total > 0:
+                pct = int(current * 100 / total)
+                _emit(name, f"  {cid}  {status}  {pct}%")
+            elif status:
+                msg = f"  {cid}  {status}".strip() if cid else f"  {status}"
+                _emit(name, msg)
+
+        _emit(name, "✅  Pull complete")
 
         attrs      = c.attrs
         cfg        = attrs.get("Config") or {}
@@ -273,8 +297,11 @@ def _do_update(name: str) -> tuple[bool, str]:
         net_names = list(net_cfg.keys())
         primary_net = net_names[0] if net_names else None
 
+        _emit(name, "🛑  Stopping old container…")
         c.stop()
+        _emit(name, "🗑️  Removing old container…")
         c.remove()
+        _emit(name, "🚀  Starting new container…")
 
         new_c = client.containers.run(
             image_str,
@@ -298,20 +325,25 @@ def _do_update(name: str) -> tuple[bool, str]:
                 net_aliases = (net_cfg[net_name].get("Aliases") or [])
                 network = client.networks.get(net_name)
                 network.connect(new_c, aliases=net_aliases)
+                _emit(name, f"🔗  Re-attached network {net_name}")
             except Exception as e:
                 log.warning("Could not re-attach network %s to %s: %s", net_name, name, e)
+                _emit(name, f"⚠️  Could not re-attach network {net_name}: {e}")
 
         with cache_lock:
             container_cache[name] = {"update_status": "up_to_date", "update_reason": ""}
 
+        _emit(name, f"✅  {name} updated successfully → {new_c.id[:12]}")
         log.info("Updated %s → %s", name, new_c.id[:12])
         return True, ""
     except Exception as e:
         log.error("Update %s failed: %s", name, e)
+        _emit(name, f"❌  Error: {e}")
         return False, str(e)
     finally:
         with cache_lock:
             updating_set.discard(name)
+            update_done[name] = True
 
 def do_update_async(name: str):
     """Fire-and-forget update; result is reflected in container_cache."""
@@ -372,6 +404,25 @@ def api_update(name):
     # Run in background; UI polls for status changes
     do_update_async(name)
     return jsonify({"ok": True})
+
+@app.route("/api/update-log/<name>")
+def api_update_log(name):
+    """SSE stream of update log lines for a container."""
+    def generate():
+        sent = 0
+        while True:
+            with cache_lock:
+                lines = update_logs.get(name, [])
+                done  = update_done.get(name, False)
+            while sent < len(lines):
+                yield f"data: {lines[sent]}\n\n"
+                sent += 1
+            if done and sent >= len(lines):
+                yield "data: __DONE__\n\n"
+                return
+            time.sleep(0.4)
+    return app.response_class(generate(), mimetype="text/event-stream",
+                               headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 @app.route("/api/settings", methods=["GET"])
 def api_settings_get():
