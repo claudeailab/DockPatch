@@ -322,7 +322,8 @@
 
     @media (max-width: 640px) {
       main { padding: 10px 12px; }
-      .stat { min-width: 90px; padding: 7px 10px; }
+      .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .stat { min-width: 0; padding: 7px 10px; flex: unset; }
       .stat-val { font-size: 18px; }
       .toolbar-search { width: 140px; }
     }
