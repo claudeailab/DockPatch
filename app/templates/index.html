@@ -674,7 +674,7 @@ function renderGrid() {
     const actions = c.is_self
       ? `<span class="self-lock" title="Update dockpatch manually">🔒</span>`
       : `<button class="btn btn-ghost btn-sm" onclick="checkOne(this, '${escAttr(c.name)}')"
-           title="Check" ${isBusy ? 'disabled' : ''}>🔍</button>
+           title="Check" ${isBusy ? 'disabled' : ''}>Check</button>
          <button class="btn btn-success btn-sm" onclick="updateOne(this, '${escAttr(c.name)}')"
            ${updateDisabled ? 'disabled' : ''}>Update</button>`;
 
