@@ -594,37 +594,6 @@ async function poll() {
     document.getElementById('update-all-btn').disabled = !hasUpdates || busyAll;
 
     updateStats(isScanning);
-    renderGrid();
-  } catch(e) {
-    console.error('poll error:', e);
-  } finally {
-    pollInFlight = false;
-  }
-}
-
-// ── stats ──
-function updateStats(isChecking) {
-  const peers    = containers.filter(c => !c.is_self);
-  const total    = peers.length;
-  const updates  = peers.filter(c => c.update_status === 'update_available').length;
-  const uptodate = peers.filter(c => c.update_status === 'up_to_date').length;
-  const unknown  = peers.filter(c => c.update_status === 'unknown').length;
-  const checking = peers.filter(c => c.update_status === 'checking').length;
-
-  const unknownDisplay = isChecking ? (unknown + checking) : unknown;
-
-  animateStat('s-total',    total);
-  animateStat('s-updates',  updates);
-  animateStat('s-uptodate', uptodate);
-  animateStat('s-unknown',  unknownDisplay);
-
-  const label = document.getElementById('s-unknown-label');
-  label.textContent = isChecking ? 'Remaining' : 'Not checked';
-  const card = label.closest('.stat');
-  card.style.borderColor = (isChecking && unknownDisplay > 0) ? '#2d5a8e' : '';
-}
-
-// ── grid ──
 function renderGrid() {
   const q = document.getElementById('search').value.toLowerCase();
   let rows = containers.filter(c =>
@@ -650,6 +619,57 @@ function renderGrid() {
       exited:  '<span class="badge badge-exited">● Exited</span>',
       paused:  '<span class="badge badge-paused">● Paused</span>',
     }[c.status] || `<span class="badge badge-other">● ${escHtml(c.status)}</span>`;
+
+    let updBadge;
+    if (c.update_status === 'checking') {
+      updBadge = '<span class="badge badge-checking">⟳ Checking…</span>';
+    } else if (c.update_status === 'updating') {
+      updBadge = '<span class="badge badge-updating">⟳ Updating…</span>';
+    } else {
+      updBadge = {
+        up_to_date:       '<span class="badge badge-uptodate">✓ Up to date</span>',
+        update_available: '<span class="badge badge-available">⬆ Update available</span>',
+        error:            `<span class="badge badge-error" title="${escAttr(c.update_reason || '')}">✕ Error</span>`,
+      }[c.update_status] || '<span class="badge badge-unknown">— Not checked</span>';
+    }
+
+    const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
+
+    const isBusy = c.update_status === 'checking' || c.update_status === 'updating';
+    // Update button is disabled when: scanning is in progress, or this container is busy,
+    // or there is no update available for it.
+    const updateDisabled = isScanning || isBusy || c.update_status !== 'update_available';
+
+    const actions = c.is_self
+      ? `<span class="self-lock" title="Update dockpatch manually">🔒</span>`
+      : `<button class="btn btn-check btn-sm" onclick="checkOne(this, '${escAttr(c.name)}')"
+           title="Check for updates" ${isBusy || isScanning ? 'disabled' : ''}>
+           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+           Check for updates
+         </button>
+         <button class="btn btn-success btn-sm" onclick="updateOne(this, '${escAttr(c.name)}')"
+           ${updateDisabled ? 'disabled' : ''}>Update</button>`;
+
+    let cardClass = 'card';
+    if (c.is_self)                                   cardClass += ' is-self';
+    else if (c.update_status === 'update_available') cardClass += ' has-update';
+    else if (c.update_status === 'updating')         cardClass += ' is-updating';
+    else if (c.update_status === 'checking')         cardClass += ' is-checking';
+    else if (c.update_status === 'error')            cardClass += ' is-error';
+
+    return `<div class="${cardClass}">
+      <div class="card-top">
+        <div class="card-name">${escHtml(c.name)}${selfTag}</div>
+        <div class="card-state">${stateBadge}</div>
+      </div>
+      <div class="card-image" title="${escAttr(c.image)}">${escHtml(c.image)}</div>
+      <div class="card-bottom">
+        ${updBadge}
+        <div class="card-actions">${actions}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
 
     let updBadge;
     if (c.update_status === 'checking') {
