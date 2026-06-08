@@ -596,6 +596,75 @@ async function poll() {
     updateStats(isScanning);
 function renderGrid() {\n  const grid = document.getElementById('grid');\n  \n  if (containers.length === 0) {\n    grid.innerHTML = '<div class=\"empty\">Loading containers…</div>';\n    return;\n  }\n  \n  const q = document.getElementById('search').value.toLowerCase();\n  let rows = containers.filter(c =>\n    c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q)\n  );\n\n  rows.sort((a, b) => {\n    const order = s => s === 'update_available' ? 0 : s === 'checking' || s === 'updating' ? 1 : s === 'unknown' ? 3 : 2;\n    const od = order(a.update_status) - order(b.update_status);\n    if (od !== 0) return od;\n    return a.name.localeCompare(b.name);\n  });\n\n  if (!rows.length) {\n    grid.innerHTML = '<div class=\"empty\">No containers found</div>';\n    return;\n  }\n\n  grid.innerHTML = rows.map(c => {\n    const stateBadge = {\n      running: '<span class=\"badge badge-running\">● Running</span>',\n      exited:  '<span class=\"badge badge-exited\">● Exited</span>',\n      paused:  '<span class=\"badge badge-paused\">● Paused</span>',\n    }[c.status] || `<span class=\"badge badge-other\">● ${escHtml(c.status)}</span>`;\n\n    let updBadge;\n    if (c.update_status === 'checking') {\n      updBadge = '<span class=\"badge badge-checking\">⟳ Checking…</span>';\n    } else if (c.update_status === 'updating') {\n      updBadge = '<span class=\"badge badge-updating\">⟳ Updating…</span>';\n    } else {\n      updBadge = {\n        up_to_date:       '<span class=\"badge badge-uptodate\">✓ Up to date</span>',\n        update_available: '<span class=\"badge badge-available\">⬆ Update available</span>',\n        error:            `<span class=\"badge badge-error\" title=\"${escAttr(c.update_reason || '')}\">✕ Error</span>`,\n      }[c.update_status] || '<span class=\"badge badge-unknown\">— Not checked</span>';\n    }\n\n    const selfTag = c.is_self ? '<span class=\"self-badge\">self</span>' : '';\n\n    const isBusy = c.update_status === 'checking' || c.update_status === 'updating';\n    const updateDisabled = isScanning || isBusy || c.update_status !== 'update_available';\n\n    const actions = c.is_self\n      ? `<span class=\"self-lock\" title=\"Update dockpatch manually\">🔒</span>`\n      : `<button class=\"btn btn-check btn-sm\" onclick=\"checkOne(this, '${escAttr(c.name)}')\"\n           title=\"Check for updates\" ${isBusy || isScanning ? 'disabled' : ''}>\n           <svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"/></svg>\n           Check for updates\n         </button>\n         <button class=\"btn btn-success btn-sm\" onclick=\"updateOne(this, '${escAttr(c.name)}')\"\n           ${updateDisabled ? 'disabled' : ''}>Update</button>`;\n\n    let cardClass = 'card';\n    if (c.is_self)                                   cardClass += ' is-self';\n    else if (c.update_status === 'update_available') cardClass += ' has-update';\n    else if (c.update_status === 'updating')         cardClass += ' is-updating';\n    else if (c.update_status === 'checking')         cardClass += ' is-checking';\n    else if (c.update_status === 'error')            cardClass += ' is-error';\n\n    return `<div class=\"${cardClass}\">\n      <div class=\"card-top\">\n        <div class=\"card-name\">${escHtml(c.name)}${selfTag}</div>\n        <div class=\"card-state\">${stateBadge}</div>\n      </div>\n      <div class=\"card-image\" title=\"${escAttr(c.image)}\">${escHtml(c.image)}</div>\n      <div class=\"card-bottom\">\n        ${updBadge}\n        <div class=\"card-actions\">${actions}</div>\n      </div>\n    </div>`;\n  }).join('');\n}
 
+function updateStats(isChecking) {
+  const total = containers.length;
+  const updates = containers.filter(c => c.update_status === 'update_available').length;
+  const uptodate = containers.filter(c => c.update_status === 'up_to_date').length;
+  const unknown = containers.filter(c => c.update_status === 'unknown' || c.update_status === 'checking').length;
+  
+  animateStat('s-total', total);
+  animateStat('s-updates', updates);
+  animateStat('s-uptodate', uptodate);
+  animateStat('s-unknown', unknown);
+  
+  renderGrid();
+}
+
+async function checkOne(btn, name) {
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/check/${encodeURIComponent(name)}`, { method: 'POST' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  } catch (e) {
+    toast(`Failed to check ${name}: ${e.message}`, 'error');
+  }
+}
+
+async function checkAll(btn) {
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/check/all', { method: 'POST' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  } catch (e) {
+    toast(`Failed to check all: ${e.message}`, 'error');
+  }
+}
+
+async function updateOne(btn, name) {
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/update/${encodeURIComponent(name)}`, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      toast(`Updating ${name}…`, 'info');
+    } else {
+      toast(`Failed to update ${name}: ${d.error || 'unknown error'}`, 'error');
+    }
+  } catch (e) {
+    toast(`Failed to update ${name}: ${e.message}`, 'error');
+  }
+}
+
+async function updateAll(btn) {
+  btn.disabled = true;
+  const available = containers.filter(c => c.update_status === 'update_available' && !c.is_self);
+  if (available.length === 0) {
+    toast('No containers available for update', 'info');
+    return;
+  }
+  toast(`Updating ${available.length} container(s)…`, 'info');
+  for (const c of available) {
+    try {
+      const r = await fetch(`/api/update/${encodeURIComponent(c.name)}`, { method: 'POST' });
+      const d = await r.json();
+      if (!d.ok) toast(`Failed to update ${c.name}`, 'error');
+    } catch (e) {
+      toast(`Failed to update ${c.name}: ${e.message}`, 'error');
+    }
+  }
+}
+
+
     let updBadge;
     if (c.update_status === 'checking') {
       updBadge = '<span class="badge badge-checking">⟳ Checking…</span>';
