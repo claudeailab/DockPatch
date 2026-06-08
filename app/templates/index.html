@@ -594,78 +594,7 @@ async function poll() {
     document.getElementById('update-all-btn').disabled = !hasUpdates || busyAll;
 
     updateStats(isScanning);
-function renderGrid() {
-  const grid = document.getElementById('grid');
-  
-  if (containers.length === 0) {
-    grid.innerHTML = '<div class="empty">Loading containers…</div>';
-    return;
-  }
-  
-  const q = document.getElementById('search').value.toLowerCase();
-  let rows = containers.filter(c =>
-    c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q)
-  );
-
-  rows.sort((a, b) => {
-    const order = s => s === 'update_available' ? 0 : s === 'checking' || s === 'updating' ? 1 : s === 'unknown' ? 3 : 2;
-    const od = order(a.update_status) - order(b.update_status);
-    if (od !== 0) return od;
-    return a.name.localeCompare(b.name);
-  });
-
-  if (!rows.length) {
-    grid.innerHTML = '<div class="empty">No containers found</div>';
-    return;
-  }
-
-  grid.innerHTML = rows.map(c => {
-    const stateBadge = {
-      running: '<span class="badge badge-running">● Running</span>',
-      exited:  '<span class="badge badge-exited">● Exited</span>',
-      paused:  '<span class="badge badge-paused">● Paused</span>',
-    }[c.status] || `<span class="badge badge-other">● ${escHtml(c.status)}</span>`;
-
-    let updBadge;
-    if (c.update_status === 'checking') {
-      updBadge = '<span class="badge badge-checking">⟳ Checking…</span>';
-    } else if (c.update_status === 'updating') {
-      updBadge = '<span class="badge badge-updating">⟳ Updating…</span>';
-    } else {
-      updBadge = {
-        up_to_date:       '<span class="badge badge-uptodate">✓ Up to date</span>',
-        update_available: '<span class="badge badge-available">⬆ Update available</span>',
-        error:            `<span class="badge badge-error" title="${escAttr(c.update_reason || '')}">✕ Error</span>`,
-      }[c.update_status] || '<span class="badge badge-unknown">— Not checked</span>';
-    }
-
-    const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
-
-    const isBusy = c.update_status === 'checking' || c.update_status === 'updating';
-    const updateDisabled = isScanning || isBusy || c.update_status !== 'update_available';
-
-    const actions = c.is_self
-      ? `<span class="self-lock" title="Update dockpatch manually">🔒</span>`
-      : `<button class="btn btn-check btn-sm" onclick="checkOne(this, '${escAttr(c.name)}')"
-           title="Check for updates" ${isBusy || isScanning ? 'disabled' : ''}>✔</button>
-         <button class="btn btn-update btn-sm" onclick="updateOne(this, '${escAttr(c.name)}')"
-           title="Update now" ${updateDisabled ? 'disabled' : ''}>⬆</button>`;
-
-    return `<div class="card">
-              <div class="card-header">
-                <div class="card-title">${escHtml(c.name)} ${selfTag}</div>
-                <div class="card-actions">${actions}</div>
-              </div>
-              <div class="card-body">
-                <div class="image-row"><strong>Image:</strong> <code>${escHtml(c.image)}</code></div>
-                <div class="status-row">
-                  ${stateBadge}
-                  ${updBadge}
-                </div>
-              </div>
-            </div>`;
-  }).join('');
-}
+function renderGrid() {\n  const grid = document.getElementById('grid');\n  \n  if (containers.length === 0) {\n    grid.innerHTML = '<div class=\"empty\">Loading containers…</div>';\n    return;\n  }\n  \n  const q = document.getElementById('search').value.toLowerCase();\n  let rows = containers.filter(c =>\n    c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q)\n  );\n\n  rows.sort((a, b) => {\n    const order = s => s === 'update_available' ? 0 : s === 'checking' || s === 'updating' ? 1 : s === 'unknown' ? 3 : 2;\n    const od = order(a.update_status) - order(b.update_status);\n    if (od !== 0) return od;\n    return a.name.localeCompare(b.name);\n  });\n\n  if (!rows.length) {\n    grid.innerHTML = '<div class=\"empty\">No containers found</div>';\n    return;\n  }\n\n  grid.innerHTML = rows.map(c => {\n    const stateBadge = {\n      running: '<span class=\"badge badge-running\">● Running</span>',\n      exited:  '<span class=\"badge badge-exited\">● Exited</span>',\n      paused:  '<span class=\"badge badge-paused\">● Paused</span>',\n    }[c.status] || `<span class=\"badge badge-other\">● ${escHtml(c.status)}</span>`;\n\n    let updBadge;\n    if (c.update_status === 'checking') {\n      updBadge = '<span class=\"badge badge-checking\">⟳ Checking…</span>';\n    } else if (c.update_status === 'updating') {\n      updBadge = '<span class=\"badge badge-updating\">⟳ Updating…</span>';\n    } else {\n      updBadge = {\n        up_to_date:       '<span class=\"badge badge-uptodate\">✓ Up to date</span>',\n        update_available: '<span class=\"badge badge-available\">⬆ Update available</span>',\n        error:            `<span class=\"badge badge-error\" title=\"${escAttr(c.update_reason || '')}\">✕ Error</span>`,\n      }[c.update_status] || '<span class=\"badge badge-unknown\">— Not checked</span>';\n    }\n\n    const selfTag = c.is_self ? '<span class=\"self-badge\">self</span>' : '';\n\n    const isBusy = c.update_status === 'checking' || c.update_status === 'updating';\n    const updateDisabled = isScanning || isBusy || c.update_status !== 'update_available';\n\n    const actions = c.is_self\n      ? `<span class=\"self-lock\" title=\"Update dockpatch manually\">🔒</span>`\n      : `<button class=\"btn btn-check btn-sm\" onclick=\"checkOne(this, '${escAttr(c.name)}')\"\n           title=\"Check for updates\" ${isBusy || isScanning ? 'disabled' : ''}>\n           <svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"/></svg>\n           Check for updates\n         </button>\n         <button class=\"btn btn-success btn-sm\" onclick=\"updateOne(this, '${escAttr(c.name)}')\"\n           ${updateDisabled ? 'disabled' : ''}>Update</button>`;\n\n    let cardClass = 'card';\n    if (c.is_self)                                   cardClass += ' is-self';\n    else if (c.update_status === 'update_available') cardClass += ' has-update';\n    else if (c.update_status === 'updating')         cardClass += ' is-updating';\n    else if (c.update_status === 'checking')         cardClass += ' is-checking';\n    else if (c.update_status === 'error')            cardClass += ' is-error';\n\n    return `<div class=\"${cardClass}\">\n      <div class=\"card-top\">\n        <div class=\"card-name\">${escHtml(c.name)}${selfTag}</div>\n        <div class=\"card-state\">${stateBadge}</div>\n      </div>\n      <div class=\"card-image\" title=\"${escAttr(c.image)}\">${escHtml(c.image)}</div>\n      <div class=\"card-bottom\">\n        ${updBadge}\n        <div class=\"card-actions\">${actions}</div>\n      </div>\n    </div>`;\n  }).join('');\n}
 
     let updBadge;
     if (c.update_status === 'checking') {
