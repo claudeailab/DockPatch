@@ -594,13 +594,14 @@ async function poll() {
     document.getElementById('update-all-btn').disabled = !hasUpdates || busyAll;
 
     updateStats(isScanning);
-    renderGrid();
-  } finally {
-    pollInFlight = false;
-  }
-}
-
 function renderGrid() {
+  const grid = document.getElementById('grid');
+  
+  if (containers.length === 0) {
+    grid.innerHTML = '<div class="empty">Loading containers…</div>';
+    return;
+  }
+  
   const q = document.getElementById('search').value.toLowerCase();
   let rows = containers.filter(c =>
     c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q)
@@ -613,7 +614,6 @@ function renderGrid() {
     return a.name.localeCompare(b.name);
   });
 
-  const grid = document.getElementById('grid');
   if (!rows.length) {
     grid.innerHTML = '<div class="empty">No containers found</div>';
     return;
@@ -625,6 +625,47 @@ function renderGrid() {
       exited:  '<span class="badge badge-exited">● Exited</span>',
       paused:  '<span class="badge badge-paused">● Paused</span>',
     }[c.status] || `<span class="badge badge-other">● ${escHtml(c.status)}</span>`;
+
+    let updBadge;
+    if (c.update_status === 'checking') {
+      updBadge = '<span class="badge badge-checking">⟳ Checking…</span>';
+    } else if (c.update_status === 'updating') {
+      updBadge = '<span class="badge badge-updating">⟳ Updating…</span>';
+    } else {
+      updBadge = {
+        up_to_date:       '<span class="badge badge-uptodate">✓ Up to date</span>',
+        update_available: '<span class="badge badge-available">⬆ Update available</span>',
+        error:            `<span class="badge badge-error" title="${escAttr(c.update_reason || '')}">✕ Error</span>`,
+      }[c.update_status] || '<span class="badge badge-unknown">— Not checked</span>';
+    }
+
+    const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
+
+    const isBusy = c.update_status === 'checking' || c.update_status === 'updating';
+    const updateDisabled = isScanning || isBusy || c.update_status !== 'update_available';
+
+    const actions = c.is_self
+      ? `<span class="self-lock" title="Update dockpatch manually">🔒</span>`
+      : `<button class="btn btn-check btn-sm" onclick="checkOne(this, '${escAttr(c.name)}')"
+           title="Check for updates" ${isBusy || isScanning ? 'disabled' : ''}>✔</button>
+         <button class="btn btn-update btn-sm" onclick="updateOne(this, '${escAttr(c.name)}')"
+           title="Update now" ${updateDisabled ? 'disabled' : ''}>⬆</button>`;
+
+    return `<div class="card">
+              <div class="card-header">
+                <div class="card-title">${escHtml(c.name)} ${selfTag}</div>
+                <div class="card-actions">${actions}</div>
+              </div>
+              <div class="card-body">
+                <div class="image-row"><strong>Image:</strong> <code>${escHtml(c.image)}</code></div>
+                <div class="status-row">
+                  ${stateBadge}
+                  ${updBadge}
+                </div>
+              </div>
+            </div>`;
+  }).join('');
+}
 
     let updBadge;
     if (c.update_status === 'checking') {
