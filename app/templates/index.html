@@ -607,6 +607,99 @@ function toast(msg, type = 'info') {
   setTimeout(() => el.remove(), 4000);
 }
 
+// ── render ──
+function renderGrid() {
+  const query = document.getElementById('search').value.toLowerCase();
+  const grid  = document.getElementById('grid');
+
+  const filtered = containers.filter(c =>
+    c.name.toLowerCase().includes(query) || c.image.toLowerCase().includes(query)
+  );
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="empty">No containers found</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(c => {
+    let cardClass = 'card';
+    if (c.is_self)                              cardClass += ' is-self';
+    else if (c.update_status === 'update_available') cardClass += ' has-update';
+    else if (c.update_status === 'checking')    cardClass += ' is-checking';
+    else if (c.update_status === 'updating')    cardClass += ' is-updating';
+    else if (c.update_status === 'error')       cardClass += ' is-error';
+
+    let statusBadge;
+    if      (c.status === 'running') statusBadge = '<span class="badge badge-running">▶ running</span>';
+    else if (c.status === 'exited')  statusBadge = '<span class="badge badge-exited">■ exited</span>';
+    else if (c.status === 'paused')  statusBadge = '<span class="badge badge-paused">⏸ paused</span>';
+    else                             statusBadge = `<span class="badge badge-other">${escHtml(c.status)}</span>`;
+
+    let updateBadge;
+    if      (c.update_status === 'up_to_date')       updateBadge = '<span class="badge badge-uptodate">✓ up to date</span>';
+    else if (c.update_status === 'update_available') updateBadge = '<span class="badge badge-available">⬆ update available</span>';
+    else if (c.update_status === 'checking')         updateBadge = '<span class="badge badge-checking">⟳ checking…</span>';
+    else if (c.update_status === 'updating')         updateBadge = '<span class="badge badge-updating">↻ updating…</span>';
+    else if (c.update_status === 'error')            updateBadge = `<span class="badge badge-error" title="${escAttr(c.update_reason)}">✕ error</span>`;
+    else                                             updateBadge = '<span class="badge badge-unknown">? not checked</span>';
+
+    let actions;
+    if (c.is_self) {
+      actions = '<span class="self-lock" title="Cannot update self while running">🔒 self</span>';
+    } else {
+      const busy = c.update_status === 'checking' || c.update_status === 'updating';
+      actions = `<button class="btn btn-ghost btn-sm" onclick="checkOne('${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>Check</button>`;
+      if (c.update_status === 'update_available') {
+        actions += ` <button class="btn btn-success btn-sm" onclick="updateOne(this,'${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>Update</button>`;
+      }
+    }
+
+    return `<div class="${cardClass}">
+      <div class="card-top">
+        <div class="card-name">${escHtml(c.name)}${c.is_self ? ' <span class="self-badge">SELF</span>' : ''}</div>
+        <div class="card-state">${statusBadge}</div>
+      </div>
+      <div class="card-image">${escHtml(c.image)}</div>
+      <div class="card-bottom">
+        ${updateBadge}
+        <div class="card-actions">${actions}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateStats(scanning) {
+  animateStat('s-total',   containers.length);
+  animateStat('s-updates', containers.filter(c => c.update_status === 'update_available').length);
+  animateStat('s-uptodate',containers.filter(c => c.update_status === 'up_to_date').length);
+  animateStat('s-unknown', containers.filter(c => c.update_status === 'unknown' || c.update_status === 'error').length);
+  document.getElementById('s-unknown-label').textContent = scanning ? 'Checking…' : 'Not checked';
+  renderGrid();
+}
+
+// ── actions ──
+async function checkAll(btn) {
+  btn.disabled = true;
+  await fetch('/api/check/all', { method: 'POST' });
+}
+
+async function updateAll(btn) {
+  btn.disabled = true;
+  const toUpdate = containers.filter(c => c.update_status === 'update_available' && !c.is_self);
+  for (const c of toUpdate) {
+    await fetch(`/api/update/${encodeURIComponent(c.name)}`, { method: 'POST' });
+  }
+}
+
+async function checkOne(name) {
+  await fetch(`/api/check/${encodeURIComponent(name)}`, { method: 'POST' });
+}
+
+async function updateOne(btn, name) {
+  btn.disabled = true;
+  await fetch(`/api/update/${encodeURIComponent(name)}`, { method: 'POST' });
+}
+
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSettings(); });
 
 applyColumns();
