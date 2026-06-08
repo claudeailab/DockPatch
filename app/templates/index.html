@@ -594,6 +594,12 @@ async function poll() {
     document.getElementById('update-all-btn').disabled = !hasUpdates || busyAll;
 
     updateStats(isScanning);
+    renderGrid();
+  } finally {
+    pollInFlight = false;
+  }
+}
+
 function renderGrid() {
   const q = document.getElementById('search').value.toLowerCase();
   let rows = containers.filter(c =>
@@ -667,9 +673,6 @@ function renderGrid() {
       </div>
     </div>`;
   }).join('');
-}
-  }
-  poll();
 }
 
 function toast(msg, type = 'info') {
