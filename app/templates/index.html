@@ -594,47 +594,80 @@ async function poll() {
     document.getElementById('update-all-btn').disabled = !hasUpdates || busyAll;
 
     updateStats(isScanning);
-    renderGrid();
-  } catch (e) {
-    console.error('poll error', e);
-  } finally {
-    pollInFlight = false;
+function renderGrid() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let rows = containers.filter(c =>
+    c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q)
+  );
+
+  rows.sort((a, b) => {
+    const order = s => s === 'update_available' ? 0 : s === 'checking' || s === 'updating' ? 1 : s === 'unknown' ? 3 : 2;
+    const od = order(a.update_status) - order(b.update_status);
+    if (od !== 0) return od;
+    return a.name.localeCompare(b.name);
+  });
+
+  const grid = document.getElementById('grid');
+  if (!rows.length) {
+    grid.innerHTML = '<div class="empty">No containers found</div>';
+    return;
   }
-}
 
-// ── actions ──
-async function checkAll(btn) {
-  btn.disabled = true;
-  document.getElementById('update-all-btn').disabled = true;
-  await fetch('/api/check/all', { method: 'POST' });
-  toast('Scanning all containers…', 'info');
-  poll();
-}
+  grid.innerHTML = rows.map(c => {
+    const stateBadge = {
+      running: '<span class="badge badge-running">● Running</span>',
+      exited:  '<span class="badge badge-exited">● Exited</span>',
+      paused:  '<span class="badge badge-paused">● Paused</span>',
+    }[c.status] || `<span class="badge badge-other">● ${escHtml(c.status)}</span>`;
 
-async function checkOne(btn, name) {
-  btn.disabled = true;
-  await fetch('/api/check/' + encodeURIComponent(name), { method: 'POST' });
-  toast('Checking ' + name + '…', 'info');
-}
+    let updBadge;
+    if (c.update_status === 'checking') {
+      updBadge = '<span class="badge badge-checking">⟳ Checking…</span>';
+    } else if (c.update_status === 'updating') {
+      updBadge = '<span class="badge badge-updating">⟳ Updating…</span>';
+    } else {
+      updBadge = {
+        up_to_date:       '<span class="badge badge-uptodate">✓ Up to date</span>',
+        update_available: '<span class="badge badge-available">⬆ Update available</span>',
+        error:            `<span class="badge badge-error" title="${escAttr(c.update_reason || '')}">✕ Error</span>`,
+      }[c.update_status] || '<span class="badge badge-unknown">— Not checked</span>';
+    }
 
-async function updateOne(btn, name) {
-  btn.disabled = true;
-  toast('Updating ' + name + '…', 'info');
-  const r = await fetch('/api/update/' + encodeURIComponent(name), { method: 'POST' });
-  const d = await r.json();
-  if (!d.ok) toast('Update failed: ' + d.error, 'error');
-  poll();
-}
+    const selfTag = c.is_self ? '<span class="self-badge">self</span>' : '';
 
-async function updateAll(btn) {
-  const updatable = containers.filter(c => c.update_status === 'update_available' && !c.is_self);
-  if (!updatable.length) return;
-  if (!confirm(`Update ${updatable.length} container(s)? Each will be restarted.`)) return;
-  btn.disabled = true;
-  document.getElementById('check-all-btn').disabled = true;
-  for (const c of updatable) {
-    toast('Updating ' + c.name + '…', 'info');
-    await fetch('/api/update/' + encodeURIComponent(c.name), { method: 'POST' });
+    const isBusy = c.update_status === 'checking' || c.update_status === 'updating';
+    const updateDisabled = isScanning || isBusy || c.update_status !== 'update_available';
+
+    const actions = c.is_self
+      ? `<span class="self-lock" title="Update dockpatch manually">🔒</span>`
+      : `<button class="btn btn-check btn-sm" onclick="checkOne(this, '${escAttr(c.name)}')"
+           title="Check for updates" ${isBusy || isScanning ? 'disabled' : ''}>
+           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+           Check for updates
+         </button>
+         <button class="btn btn-success btn-sm" onclick="updateOne(this, '${escAttr(c.name)}')"
+           ${updateDisabled ? 'disabled' : ''}>Update</button>`;
+
+    let cardClass = 'card';
+    if (c.is_self)                                   cardClass += ' is-self';
+    else if (c.update_status === 'update_available') cardClass += ' has-update';
+    else if (c.update_status === 'updating')         cardClass += ' is-updating';
+    else if (c.update_status === 'checking')         cardClass += ' is-checking';
+    else if (c.update_status === 'error')            cardClass += ' is-error';
+
+    return `<div class="${cardClass}">
+      <div class="card-top">
+        <div class="card-name">${escHtml(c.name)}${selfTag}</div>
+        <div class="card-state">${stateBadge}</div>
+      </div>
+      <div class="card-image" title="${escAttr(c.image)}">${escHtml(c.image)}</div>
+      <div class="card-bottom">
+        ${updBadge}
+        <div class="card-actions">${actions}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
   }
   poll();
 }
