@@ -648,7 +648,7 @@ function renderGrid() {
       actions = '<span class="self-lock" title="Cannot update self while running">🔒 self</span>';
     } else {
       const busy = c.update_status === 'checking' || c.update_status === 'updating';
-      actions = `<button class="btn btn-ghost btn-sm" onclick="checkOne('${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>Check</button>`;
+      actions = `<button class="btn btn-primary btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>↻ Check</button>`;
       if (c.update_status === 'update_available') {
         actions += ` <button class="btn btn-success btn-sm" onclick="updateOne(this,'${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>Update</button>`;
       }
@@ -681,6 +681,7 @@ function updateStats(scanning) {
 async function checkAll(btn) {
   btn.disabled = true;
   await fetch('/api/check/all', { method: 'POST' });
+  poll();
 }
 
 async function updateAll(btn) {
@@ -689,15 +690,19 @@ async function updateAll(btn) {
   for (const c of toUpdate) {
     await fetch(`/api/update/${encodeURIComponent(c.name)}`, { method: 'POST' });
   }
+  poll();
 }
 
-async function checkOne(name) {
+async function checkOne(btn, name) {
+  btn.disabled = true;
   await fetch(`/api/check/${encodeURIComponent(name)}`, { method: 'POST' });
+  poll();
 }
 
 async function updateOne(btn, name) {
   btn.disabled = true;
   await fetch(`/api/update/${encodeURIComponent(name)}`, { method: 'POST' });
+  poll();
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSettings(); });
