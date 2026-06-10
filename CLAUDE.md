@@ -7,8 +7,9 @@
 - Always host the image on the GitHub Container Registry (ghcr.io/claudeailab/${project_name})
 
 ## Branches & CI
-- Always merge branches and pull requests after changes
-- Always trigger / wait for the GitHub Actions build to complete after merging
+- Only the `main` branch should exist — no other branches
+- Always merge pull requests to main after changes
+- Always trigger / wait for the GitHub Actions build to complete after merging to main
 
 ## Web App Quality
 - The web app must always be functional and intuitive on both desktop and mobile
