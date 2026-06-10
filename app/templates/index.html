@@ -140,6 +140,13 @@
     .btn-settings { background: #1e2a3a; color: var(--text); border: 1px solid #3b82f680; }
     .btn-settings:hover:not(:disabled) { background: #243448; border-color: var(--accent); filter: none; }
     .btn-success { background: #16803c; color: #fff; }
+    .btn-check  {
+      background: #2563eb; color: #fff;
+      border: 1px solid #60a5fa;
+      box-shadow: 0 0 8px #3b82f640;
+      font-weight: 600;
+    }
+    .btn-check:hover:not(:disabled) { background: #3b82f6; border-color: #93c5fd; filter: none; }
     .btn-sm { padding: 5px 10px; font-size: 12px; }
 
     /* ── container grid ── */
@@ -219,8 +226,25 @@
     .badge-available { background: #78350f40; color: var(--yellow); border: 1px solid #92400e; }
     .badge-unknown   { background: #1e293b;   color: var(--muted);  border: 1px solid var(--border); }
     .badge-error     { background: #7f1d1d40; color: var(--red);    border: 1px solid #991b1b; }
-    .badge-checking  { background: #1e3a5f40; color: #93c5fd;       border: 1px solid #2d5a8e; }
-    .badge-updating  { background: #2e1065;   color: #c4b5fd;       border: 1px solid #7c3aed; }
+    .badge-checking  { background: #1e3a5f40; color: #93c5fd;       border: 1px solid #2d5a8e; animation: badge-pulse 1.4s ease-in-out infinite; }
+    .badge-updating  { background: #2e1065;   color: #c4b5fd;       border: 1px solid #7c3aed; animation: badge-pulse 1.4s ease-in-out infinite; }
+    @keyframes badge-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+
+    /* ── card indeterminate progress bar ── */
+    .card-progress {
+      height: 3px; border-radius: 2px;
+      background: var(--border); overflow: hidden;
+    }
+    .card-progress-bar {
+      height: 100%; width: 38%; border-radius: 2px;
+      animation: progress-slide 1.3s ease-in-out infinite;
+    }
+    .is-checking .card-progress-bar { background: var(--accent); }
+    .is-updating .card-progress-bar { background: #7c3aed; }
+    @keyframes progress-slide {
+      0%   { transform: translateX(-160%); }
+      100% { transform: translateX(370%); }
+    }
 
     /* ── modal backdrop ── */
     .modal-backdrop {
@@ -616,6 +640,13 @@ function renderGrid() {
     c.name.toLowerCase().includes(query) || c.image.toLowerCase().includes(query)
   );
 
+  // containers with pending updates first, then active (checking/updating), then rest
+  filtered.sort((a, b) => {
+    const rank = s => s === 'update_available' ? 0 : (s === 'checking' || s === 'updating') ? 1 : 2;
+    const diff = rank(a.update_status) - rank(b.update_status);
+    return diff !== 0 ? diff : a.name.localeCompare(b.name);
+  });
+
   if (filtered.length === 0) {
     grid.innerHTML = '<div class="empty">No containers found</div>';
     return;
@@ -648,18 +679,20 @@ function renderGrid() {
       actions = '<span class="self-lock" title="Cannot update self while running">🔒 self</span>';
     } else {
       const busy = c.update_status === 'checking' || c.update_status === 'updating';
-      actions = `<button class="btn btn-primary btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>↻ Check</button>`;
+      actions = `<button class="btn btn-check btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>↻ Check</button>`;
       if (c.update_status === 'update_available') {
         actions += ` <button class="btn btn-success btn-sm" onclick="updateOne(this,'${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>Update</button>`;
       }
     }
 
+    const showProgress = c.update_status === 'checking' || c.update_status === 'updating';
     return `<div class="${cardClass}">
       <div class="card-top">
         <div class="card-name">${escHtml(c.name)}${c.is_self ? ' <span class="self-badge">SELF</span>' : ''}</div>
         <div class="card-state">${statusBadge}</div>
       </div>
       <div class="card-image">${escHtml(c.image)}</div>
+      ${showProgress ? '<div class="card-progress"><div class="card-progress-bar"></div></div>' : ''}
       <div class="card-bottom">
         ${updateBadge}
         <div class="card-actions">${actions}</div>
