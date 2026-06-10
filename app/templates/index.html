@@ -139,7 +139,13 @@
     .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); filter: none; }
     .btn-settings { background: #1e2a3a; color: var(--text); border: 1px solid #3b82f680; }
     .btn-settings:hover:not(:disabled) { background: #243448; border-color: var(--accent); filter: none; }
-    .btn-success { background: #16803c; color: #fff; }
+    .btn-success {
+      background: #16803c; color: #fff;
+      border: 1px solid #4ade80;
+      box-shadow: 0 0 8px #22c55e40;
+      font-weight: 600;
+    }
+    .btn-success:hover:not(:disabled) { background: #22c55e; border-color: #86efac; filter: none; }
     .btn-check  {
       background: #2563eb; color: #fff;
       border: 1px solid #60a5fa;
@@ -640,9 +646,9 @@ function renderGrid() {
     c.name.toLowerCase().includes(query) || c.image.toLowerCase().includes(query)
   );
 
-  // containers with pending updates first, then active (checking/updating), then rest
+  // containers with available updates bubble to the top, rest stay alphabetical
   filtered.sort((a, b) => {
-    const rank = s => s === 'update_available' ? 0 : (s === 'checking' || s === 'updating') ? 1 : 2;
+    const rank = s => s === 'update_available' ? 0 : 1;
     const diff = rank(a.update_status) - rank(b.update_status);
     return diff !== 0 ? diff : a.name.localeCompare(b.name);
   });
