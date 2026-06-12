@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.2.6"
+VERSION = "0.2.7"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
@@ -109,8 +109,10 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
         return "custom", reason
 
     # get local digest
+    image_exists_locally = False
     try:
         local_img = client.images.get(image_str)
+        image_exists_locally = True
         local_digests = local_img.attrs.get("RepoDigests") or []
         local_digest = local_digests[0].split("@")[-1] if local_digests else ""
     except docker.errors.ImageNotFound:
@@ -129,6 +131,10 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
         if "unauthorized" in reason.lower() or "authentication" in reason.lower():
             reason = "Registry auth required"
         elif "not found" in reason.lower() or "manifest" in reason.lower():
+            # If image exists locally but not in registry, it's a custom image
+            if image_exists_locally:
+                log.info("Check %s → custom (local image not in registry)", name)
+                return "custom", "Custom image (not in registry)"
             reason = "Image not found in registry"
         elif "timeout" in reason.lower():
             reason = "Registry timed out"
