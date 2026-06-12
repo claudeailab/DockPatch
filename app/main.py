@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.2.9"
+VERSION = "0.3.0"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
@@ -121,8 +121,11 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
     except docker.errors.ImageNotFound:
         log.info("Check %s → update_available (image not local)", name)
         return "update_available", ""
-    except Exception as e:
-        return "error", f"Local image lookup failed: {e}"
+    except Exception:
+        # Any other error inspecting the local image — container is running so
+        # the image exists; we just can't read its metadata. Treat as custom.
+        log.info("Check %s → custom (local image lookup error)", name)
+        return "custom", ""
 
     # get remote digest without downloading the image
     try:
@@ -132,6 +135,12 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
     except docker.errors.APIError as e:
         reason = str(e)
         if "unauthorized" in reason.lower() or "authentication" in reason.lower():
+            # Docker Hub (and many registries) issue a 401 challenge before 404,
+            # so "unauthorized" does not mean the image is in the registry.
+            # If the image exists locally with no registry digest, it's custom.
+            if image_exists_locally:
+                log.info("Check %s → custom (registry auth challenge, image is local)", name)
+                return "custom", ""
             reason = "Registry auth required"
             log.warning("pull_check %s: %s", name, reason)
             return "error", reason
