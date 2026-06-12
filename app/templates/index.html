@@ -221,6 +221,7 @@
     .badge-error     { background: #7f1d1d40; color: var(--red);    border: 1px solid #991b1b; }
     .badge-checking  { background: #1e3a5f40; color: #93c5fd;       border: 1px solid #2d5a8e; }
     .badge-updating  { background: #2e1065;   color: #c4b5fd;       border: 1px solid #7c3aed; }
+    .badge-custom    { background: #1e293b;   color: #94a3b8;       border: 1px solid #475569; }
 
     /* ── modal backdrop ── */
     .modal-backdrop {
@@ -641,11 +642,14 @@ function renderGrid() {
     else if (c.update_status === 'checking')         updateBadge = '<span class="badge badge-checking">⟳ checking…</span>';
     else if (c.update_status === 'updating')         updateBadge = '<span class="badge badge-updating">↻ updating…</span>';
     else if (c.update_status === 'error')            updateBadge = `<span class="badge badge-error" title="${escAttr(c.update_reason)}">✕ error</span>`;
+    else if (c.update_status === 'custom')           updateBadge = '<span class="badge badge-custom">⚙ custom image</span>';
     else                                             updateBadge = '<span class="badge badge-unknown">? not checked</span>';
 
     let actions;
     if (c.is_self) {
       actions = '<span class="self-lock" title="Cannot update self while running">🔒 self</span>';
+    } else if (c.update_status === 'custom') {
+      actions = '<span class="self-lock" title="Locally built image — no registry to check">⚙ local</span>';
     } else {
       const busy = c.update_status === 'checking' || c.update_status === 'updating';
       actions = `<button class="btn btn-primary btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>↻ Check</button>`;

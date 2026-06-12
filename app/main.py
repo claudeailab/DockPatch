@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
@@ -104,15 +104,17 @@ def is_pullable(image_str: str) -> bool:
 def pull_check(name: str, image_str: str) -> tuple[str, str]:
     """Compare remote digest via registry API — never pulls the image down."""
     if not is_pullable(image_str):
-        reason = "No pullable tag (local or digest-only image)"
-        log.info("Check %s → skipped (%s)", name, reason)
-        return "error", reason
+        log.info("Check %s → custom (non-registry image)", name)
+        return "custom", ""
 
     # get local digest
     try:
         local_img = client.images.get(image_str)
         local_digests = local_img.attrs.get("RepoDigests") or []
-        local_digest = local_digests[0].split("@")[-1] if local_digests else ""
+        if not local_digests:
+            log.info("Check %s → custom (locally built, no registry digest)", name)
+            return "custom", ""
+        local_digest = local_digests[0].split("@")[-1]
     except docker.errors.ImageNotFound:
         log.info("Check %s → update_available (image not local)", name)
         return "update_available", ""
@@ -175,6 +177,9 @@ def snapshot_containers() -> list[dict]:
             else:
                 update_status = cached.get("update_status", "unknown")
                 reason = cached.get("update_reason", "")
+                if update_status == "unknown" and not is_pullable(image_str):
+                    update_status = "custom"
+                    reason = ""
 
             result.append({
                 "name":          name,
