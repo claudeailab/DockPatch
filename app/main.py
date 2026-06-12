@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.2.7"
+VERSION = "0.2.8"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
@@ -130,19 +130,27 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
         reason = str(e)
         if "unauthorized" in reason.lower() or "authentication" in reason.lower():
             reason = "Registry auth required"
-        elif "not found" in reason.lower() or "manifest" in reason.lower():
-            # If image exists locally but not in registry, it's a custom image
-            if image_exists_locally:
-                log.info("Check %s → custom (local image not in registry)", name)
-                return "custom", "Custom image (not in registry)"
-            reason = "Image not found in registry"
+            log.warning("pull_check %s: %s", name, reason)
+            return "error", reason
         elif "timeout" in reason.lower():
             reason = "Registry timed out"
+            log.warning("pull_check %s: %s", name, reason)
+            return "error", reason
         else:
-            reason = f"Registry error: {reason[:120]}"
-        log.warning("pull_check %s: %s", name, reason)
-        return "error", reason
+            # For any other registry error (not found, connection error, etc),
+            # if image exists locally, treat it as a custom/local image
+            if image_exists_locally:
+                log.info("Check %s → custom (registry unavailable/not found)", name)
+                return "custom", "Custom image (not in registry)"
+            # If image doesn't exist locally and registry is unavailable, it's an error
+            reason = str(e)[:120]
+            log.warning("pull_check %s: %s", name, reason)
+            return "error", reason
     except Exception as e:
+        # If image exists locally, treat unknown errors as custom too
+        if image_exists_locally:
+            log.info("Check %s → custom (registry check failed)", name)
+            return "custom", "Custom image (registry check failed)"
         log.warning("pull_check %s unexpected: %s", name, e)
         return "error", f"Unexpected error: {str(e)[:120]}"
 
