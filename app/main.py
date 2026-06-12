@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.2.8"
+VERSION = "0.2.9"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
@@ -114,7 +114,10 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
         local_img = client.images.get(image_str)
         image_exists_locally = True
         local_digests = local_img.attrs.get("RepoDigests") or []
-        local_digest = local_digests[0].split("@")[-1] if local_digests else ""
+        if not local_digests:
+            log.info("Check %s → custom (locally built, no registry digest)", name)
+            return "custom", ""
+        local_digest = local_digests[0].split("@")[-1]
     except docker.errors.ImageNotFound:
         log.info("Check %s → update_available (image not local)", name)
         return "update_available", ""
