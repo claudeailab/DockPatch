@@ -176,6 +176,7 @@
     .card.has-update  { border-left: 3px solid var(--yellow); }
     .card.is-checking { border-left: 3px solid var(--accent); }
     .card.is-updating { border-left: 3px solid #7c3aed; }
+    .card.is-custom   { border-left: 3px solid #8b5cf6; }
     .card.is-error    { border-left: 3px solid #4b1c1c; }
     .card.is-self     { border-left: 3px solid #312e81; }
 
@@ -231,6 +232,7 @@
     .badge-uptodate  { background: #14532d40; color: var(--green);  border: 1px solid #166534; }
     .badge-available { background: #78350f40; color: var(--yellow); border: 1px solid #92400e; }
     .badge-unknown   { background: #1e293b;   color: var(--muted);  border: 1px solid var(--border); }
+    .badge-custom    { background: #5b21b640; color: #d8b4fe;       border: 1px solid #a78bfa; }
     .badge-error     { background: #7f1d1d40; color: var(--red);    border: 1px solid #991b1b; }
     .badge-checking  { background: #1e3a5f40; color: #93c5fd;       border: 1px solid #2d5a8e; animation: badge-pulse 1.4s ease-in-out infinite; }
     .badge-updating  { background: #2e1065;   color: #c4b5fd;       border: 1px solid #7c3aed; animation: badge-pulse 1.4s ease-in-out infinite; }
@@ -646,13 +648,6 @@ function renderGrid() {
     c.name.toLowerCase().includes(query) || c.image.toLowerCase().includes(query)
   );
 
-  // containers with available updates bubble to the top, rest stay alphabetical
-  filtered.sort((a, b) => {
-    const rank = s => s === 'update_available' ? 0 : 1;
-    const diff = rank(a.update_status) - rank(b.update_status);
-    return diff !== 0 ? diff : a.name.localeCompare(b.name);
-  });
-
   if (filtered.length === 0) {
     grid.innerHTML = '<div class="empty">No containers found</div>';
     return;
@@ -664,6 +659,7 @@ function renderGrid() {
     else if (c.update_status === 'update_available') cardClass += ' has-update';
     else if (c.update_status === 'checking')    cardClass += ' is-checking';
     else if (c.update_status === 'updating')    cardClass += ' is-updating';
+    else if (c.update_status === 'custom')      cardClass += ' is-custom';
     else if (c.update_status === 'error')       cardClass += ' is-error';
 
     let statusBadge;
@@ -677,12 +673,15 @@ function renderGrid() {
     else if (c.update_status === 'update_available') updateBadge = '<span class="badge badge-available">⬆ update available</span>';
     else if (c.update_status === 'checking')         updateBadge = '<span class="badge badge-checking">⟳ checking…</span>';
     else if (c.update_status === 'updating')         updateBadge = '<span class="badge badge-updating">↻ updating…</span>';
+    else if (c.update_status === 'custom')           updateBadge = `<span class="badge badge-custom" title="${escAttr(c.update_reason)}">◆ custom image</span>`;
     else if (c.update_status === 'error')            updateBadge = `<span class="badge badge-error" title="${escAttr(c.update_reason)}">✕ error</span>`;
     else                                             updateBadge = '<span class="badge badge-unknown">? not checked</span>';
 
     let actions;
     if (c.is_self) {
       actions = '<span class="self-lock" title="Cannot update self while running">🔒 self</span>';
+    } else if (c.update_status === 'custom') {
+      actions = '<span class="self-lock" title="Custom image (digest-only or local)">📦 custom</span>';
     } else {
       const busy = c.update_status === 'checking' || c.update_status === 'updating';
       actions = `<button class="btn btn-check btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>↻ Check</button>`;
@@ -711,7 +710,7 @@ function updateStats(scanning) {
   animateStat('s-total',   containers.length);
   animateStat('s-updates', containers.filter(c => c.update_status === 'update_available').length);
   animateStat('s-uptodate',containers.filter(c => c.update_status === 'up_to_date').length);
-  animateStat('s-unknown', containers.filter(c => c.update_status === 'unknown' || c.update_status === 'error').length);
+  animateStat('s-unknown', containers.filter(c => c.update_status === 'unknown' || c.update_status === 'error' || c.update_status === 'custom').length);
   document.getElementById('s-unknown-label').textContent = scanning ? 'Checking…' : 'Not checked';
   renderGrid();
 }

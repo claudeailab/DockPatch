@@ -104,9 +104,9 @@ def is_pullable(image_str: str) -> bool:
 def pull_check(name: str, image_str: str) -> tuple[str, str]:
     """Compare remote digest via registry API — never pulls the image down."""
     if not is_pullable(image_str):
-        reason = "No pullable tag (local or digest-only image)"
+        reason = "Custom image (digest-only or local)"
         log.info("Check %s → skipped (%s)", name, reason)
-        return "error", reason
+        return "custom", reason
 
     # get local digest
     try:
@@ -441,9 +441,9 @@ def api_settings_post():
             return default
 
     s = {
-        "check_interval_minutes":  _int(data.get("check_interval_minutes"),  0),
-        "update_interval_minutes": _int(data.get("update_interval_minutes"), 0),
-        "check_on_startup":        bool(data.get("check_on_startup", True)),
+        "check_interval_hours":  _int(data.get("check_interval_hours"),  0),
+        "update_interval_hours": _int(data.get("update_interval_hours"), 0),
+        "check_on_startup":      bool(data.get("check_on_startup", True)),
     }
     save_settings(s)
     rebuild_schedule()
