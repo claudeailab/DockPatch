@@ -648,6 +648,13 @@ function renderGrid() {
     c.name.toLowerCase().includes(query) || c.image.toLowerCase().includes(query)
   );
 
+  // update_available and updating stay pinned to top; everything else alphabetical
+  const topStatus = s => (s === 'update_available' || s === 'updating') ? 0 : 1;
+  filtered.sort((a, b) => {
+    const diff = topStatus(a.update_status) - topStatus(b.update_status);
+    return diff !== 0 ? diff : a.name.localeCompare(b.name);
+  });
+
   if (filtered.length === 0) {
     grid.innerHTML = '<div class="empty">No containers found</div>';
     return;
