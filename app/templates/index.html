@@ -301,7 +301,36 @@
       outline: none;
       width: 100%;
     }
-    .form-group input[type="number"]:focus { border-color: var(--accent); }
+    .form-group input[type="number"]:focus,
+    .form-group input[type="text"]:focus,
+    .form-group input[type="password"]:focus { border-color: var(--accent); }
+    .form-group input[type="text"],
+    .form-group input[type="password"] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 13px;
+      outline: none;
+      width: 100%;
+    }
+
+    /* ── credential list ── */
+    .cred-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 12px;
+    }
+    .cred-item + .cred-item { margin-top: 6px; }
+    .cred-info { flex: 1; min-width: 0; }
+    .cred-registry { font-weight: 600; color: var(--text); }
+    .cred-user { color: var(--muted); margin-top: 1px; }
+    .cred-empty { color: var(--muted); font-size: 12px; padding: 4px 0; }
+
     .toggle-row  { display: flex; align-items: center; gap: 10px; }
     .toggle-label { font-size: 13px; color: var(--text); }
     .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
@@ -371,6 +400,7 @@
       <div class="pill-spinner"></div>
       <span>Scanning…</span>
     </div>
+    <button class="btn btn-settings btn-sm" onclick="openCredentials()">🔑 Auth</button>
     <button class="btn btn-settings btn-sm" onclick="openSettings()">⚙ Settings</button>
     <div class="version-wrap">
       <span class="version">v{{ version }}</span>
@@ -467,6 +497,30 @@
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" onclick="closeSettings()">Cancel</button>
       <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── credentials modal ── -->
+<div class="modal-backdrop" id="creds-modal" onclick="credsBackdropClose(event)">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title">🔑 Registry Credentials</span>
+      <button class="modal-close" onclick="closeCredentials()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="form-hint">Add credentials to check and pull updates from private registries. For GitHub Container Registry use your GitHub username and a Personal Access Token with <strong>read:packages</strong> scope.</p>
+      <div id="creds-list" style="margin-top:12px"></div>
+      <div class="form-group" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <label class="form-label">Add Registry</label>
+        <input type="text"     id="creds-reg"   placeholder="ghcr.io"          autocomplete="off" spellcheck="false">
+        <input type="text"     id="creds-user"  placeholder="Username"          autocomplete="off" spellcheck="false">
+        <input type="password" id="creds-token" placeholder="Token / Password"  autocomplete="new-password">
+        <button class="btn btn-primary btn-sm" onclick="addCredential()" style="align-self:flex-start;margin-top:2px">Add</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeCredentials()">Close</button>
     </div>
   </div>
 </div>
@@ -750,7 +804,69 @@ async function updateOne(btn, name) {
   poll();
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSettings(); });
+// ── credentials ──
+function openCredentials() {
+  loadCredsList();
+  document.getElementById('creds-modal').classList.add('open');
+}
+function closeCredentials() {
+  document.getElementById('creds-modal').classList.remove('open');
+  document.getElementById('creds-reg').value   = '';
+  document.getElementById('creds-user').value  = '';
+  document.getElementById('creds-token').value = '';
+}
+function credsBackdropClose(e) {
+  if (e.target === document.getElementById('creds-modal')) closeCredentials();
+}
+
+async function loadCredsList() {
+  const r = await fetch('/api/credentials');
+  const d = await r.json();
+  const list = document.getElementById('creds-list');
+  const entries = Object.entries(d.registries || {});
+  if (!entries.length) {
+    list.innerHTML = '<div class="cred-empty">No registries configured.</div>';
+    return;
+  }
+  list.innerHTML = entries.map(([reg, info]) => `
+    <div class="cred-item">
+      <div class="cred-info">
+        <div class="cred-registry">${escHtml(reg)}</div>
+        <div class="cred-user">${escHtml(info.username)} &middot; ${info.has_token ? 'Token ✓' : 'No token'}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="removeCredential('${escAttr(reg)}')">Remove</button>
+    </div>`).join('');
+}
+
+async function addCredential() {
+  const registry = document.getElementById('creds-reg').value.trim();
+  const username = document.getElementById('creds-user').value.trim();
+  const password = document.getElementById('creds-token').value.trim();
+  if (!registry || !username || !password) { toast('All fields are required', 'error'); return; }
+  const r = await fetch('/api/credentials', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ registry, username, password }),
+  });
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById('creds-reg').value   = '';
+    document.getElementById('creds-user').value  = '';
+    document.getElementById('creds-token').value = '';
+    toast(`Credentials saved for ${registry}`, 'success');
+    loadCredsList();
+  } else {
+    toast(d.error || 'Failed to save', 'error');
+  }
+}
+
+async function removeCredential(registry) {
+  await fetch(`/api/credentials/${encodeURIComponent(registry)}`, { method: 'DELETE' });
+  toast(`Removed ${registry}`, 'info');
+  loadCredsList();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSettings(); closeCredentials(); } });
 
 applyColumns();
 poll();

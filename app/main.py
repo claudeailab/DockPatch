@@ -13,12 +13,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.3.1"
+VERSION = "0.3.2"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
 
-SETTINGS_FILE = "/data/settings.json"
+SETTINGS_FILE     = "/data/settings.json"
+CREDENTIALS_FILE  = "/data/credentials.json"
 
 # ── state ─────────────────────────────────────────────────────────────────────
 container_cache: dict[str, dict] = {}
@@ -78,6 +79,47 @@ def save_settings(s: dict):
             pass
         raise
 
+# ── registry credentials ──────────────────────────────────────────────────────
+def load_credentials() -> dict:
+    try:
+        with open(CREDENTIALS_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {"registries": {}}
+
+def save_credentials(creds: dict):
+    os.makedirs(os.path.dirname(CREDENTIALS_FILE), exist_ok=True)
+    dir_ = os.path.dirname(CREDENTIALS_FILE)
+    fd, tmp = tempfile.mkstemp(dir=dir_, prefix=".creds_", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(creds, f, indent=2)
+        os.replace(tmp, CREDENTIALS_FILE)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+def get_registry(image_str: str) -> str:
+    """Return the registry hostname for an image name."""
+    parts = image_str.split("/")
+    if len(parts) == 1:
+        return "registry-1.docker.io"
+    first = parts[0]
+    if "." in first or ":" in first or first == "localhost":
+        return first
+    return "registry-1.docker.io"
+
+def get_auth_config(image_str: str) -> "dict | None":
+    """Return a docker auth_config dict for this image's registry, or None."""
+    reg = get_registry(image_str)
+    info = load_credentials().get("registries", {}).get(reg)
+    if info and info.get("username") and info.get("password"):
+        return {"username": info["username"], "password": info["password"]}
+    return None
+
 # ── image string helper ───────────────────────────────────────────────────────
 def get_image_str(c) -> str:
     cfg_image = (c.attrs.get("Config") or {}).get("Image", "")
@@ -128,22 +170,24 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
         return "custom", ""
 
     # get remote digest without downloading the image
+    auth = get_auth_config(image_str)
     try:
         log.info("Checking remote digest for %s…", image_str)
-        dist = api_client.inspect_distribution(image_str)
+        dist = api_client.inspect_distribution(image_str, auth_config=auth)
         remote_digest = (dist.get("Descriptor") or {}).get("digest", "")
     except docker.errors.APIError as e:
         reason = str(e)
         if "unauthorized" in reason.lower() or "authentication" in reason.lower():
-            # Docker Hub (and many registries) issue a 401 challenge before 404,
-            # so "unauthorized" does not mean the image is in the registry.
-            # If the image exists locally with no registry digest, it's custom.
+            if auth:
+                # Had credentials but still got 401 — they are wrong or expired
+                log.warning("pull_check %s: auth failed with configured credentials", name)
+                return "error", "Registry auth failed — check credentials in settings"
+            # No credentials configured: 401 before 404 is normal for many registries.
+            # If the image lives locally it is custom; otherwise prompt to add credentials.
             if image_exists_locally:
                 log.info("Check %s → custom (registry auth challenge, image is local)", name)
                 return "custom", ""
-            reason = "Registry auth required"
-            log.warning("pull_check %s: %s", name, reason)
-            return "error", reason
+            return "error", "Registry auth required — add credentials in settings"
         elif "timeout" in reason.lower():
             reason = "Registry timed out"
             log.warning("pull_check %s: %s", name, reason)
@@ -290,7 +334,8 @@ def _do_update(name: str) -> tuple[bool, str]:
             return False, "No pullable image tag"
 
         _emit(name, f"⬇️  Pulling image {image_str}…")
-        for chunk in client.api.pull(image_str, stream=True, decode=True):
+        for chunk in client.api.pull(image_str, stream=True, decode=True,
+                                     auth_config=get_auth_config(image_str)):
             status  = chunk.get("status", "")
             prog    = chunk.get("progressDetail", {})
             cid     = chunk.get("id", "")
@@ -473,6 +518,33 @@ def api_settings_post():
     }
     save_settings(s)
     rebuild_schedule()
+    return jsonify({"ok": True})
+
+@app.route("/api/credentials", methods=["GET"])
+def api_credentials_get():
+    creds = load_credentials()
+    safe = {reg: {"username": info.get("username", ""), "has_token": bool(info.get("password"))}
+            for reg, info in creds.get("registries", {}).items()}
+    return jsonify({"registries": safe})
+
+@app.route("/api/credentials", methods=["POST"])
+def api_credentials_post():
+    data = request.get_json(force=True) or {}
+    registry = (data.get("registry") or "").strip().rstrip("/")
+    username  = (data.get("username")  or "").strip()
+    password  = (data.get("password")  or "").strip()
+    if not registry or not username or not password:
+        return jsonify({"ok": False, "error": "All fields are required"})
+    creds = load_credentials()
+    creds.setdefault("registries", {})[registry] = {"username": username, "password": password}
+    save_credentials(creds)
+    return jsonify({"ok": True})
+
+@app.route("/api/credentials/<path:registry>", methods=["DELETE"])
+def api_credentials_delete(registry):
+    creds = load_credentials()
+    creds.get("registries", {}).pop(registry, None)
+    save_credentials(creds)
     return jsonify({"ok": True})
 
 # ── startup ───────────────────────────────────────────────────────────────────
