@@ -303,9 +303,11 @@
     }
     .form-group input[type="number"]:focus,
     .form-group input[type="text"]:focus,
-    .form-group input[type="password"]:focus { border-color: var(--accent); }
+    .form-group input[type="password"]:focus,
+    .form-group input[type="time"]:focus { border-color: var(--accent); }
     .form-group input[type="text"],
-    .form-group input[type="password"] {
+    .form-group input[type="password"],
+    .form-group input[type="time"] {
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -315,6 +317,7 @@
       outline: none;
       width: 100%;
     }
+    .form-group input[type="time"] { color-scheme: dark; width: auto; }
 
     /* ── credential list ── */
     .cred-item {
@@ -477,6 +480,15 @@
         <span class="form-hint">Hours between automatic updates for containers with available updates. 0 = disabled.</span>
       </div>
       <div class="form-group">
+        <label class="form-label">Maintenance window</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="time" id="cfg-window-start">
+          <span style="color:var(--muted);font-size:12px;flex-shrink:0">to</span>
+          <input type="time" id="cfg-window-end">
+        </div>
+        <span class="form-hint">Auto-updates only run within this window. Leave blank to allow updates at any time. Uses server time (TZ env var).</span>
+      </div>
+      <div class="form-group">
         <label class="form-label">Startup behaviour</label>
         <div class="toggle-row">
           <label class="switch">
@@ -622,9 +634,11 @@ function backdropClose(e) {
 async function loadSettings() {
   const r = await fetch('/api/settings');
   const d = await r.json();
-  document.getElementById('cfg-check').value     = d.check_interval_hours  ?? 0;
-  document.getElementById('cfg-update').value    = d.update_interval_hours ?? 0;
-  document.getElementById('cfg-startup').checked = !!d.check_on_startup;
+  document.getElementById('cfg-check').value        = d.check_interval_hours  ?? 0;
+  document.getElementById('cfg-update').value       = d.update_interval_hours ?? 0;
+  document.getElementById('cfg-startup').checked    = !!d.check_on_startup;
+  document.getElementById('cfg-window-start').value = d.update_window_start   ?? '';
+  document.getElementById('cfg-window-end').value   = d.update_window_end     ?? '';
 }
 
 async function saveSettings() {
@@ -643,7 +657,9 @@ async function saveSettings() {
   const payload = {
     check_interval_hours:  checkRaw  !== '' ? parseInt(checkRaw,  10) : 0,
     update_interval_hours: updateRaw !== '' ? parseInt(updateRaw, 10) : 0,
-    check_on_startup:        document.getElementById('cfg-startup').checked,
+    check_on_startup:      document.getElementById('cfg-startup').checked,
+    update_window_start:   document.getElementById('cfg-window-start').value,
+    update_window_end:     document.getElementById('cfg-window-end').value,
   };
   const r = await fetch('/api/settings', {
     method: 'POST',
