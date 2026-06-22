@@ -3,6 +3,7 @@ import docker
 import threading
 import schedule
 import time
+import datetime
 import socket
 import logging
 import json
@@ -13,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.3.2"
+VERSION = "0.3.3"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
@@ -49,7 +50,9 @@ log.info("Self-container name: %r", SELF_NAME)
 DEFAULT_SETTINGS = {
     "check_interval_hours":  0,
     "update_interval_hours": 0,
-    "check_on_startup":        True,
+    "check_on_startup":      True,
+    "update_window_start":   "",
+    "update_window_end":     "",
 }
 
 def load_settings() -> dict:
@@ -423,6 +426,26 @@ def do_update_async(name: str):
 # ── scheduler ─────────────────────────────────────────────────────────────────
 scheduler_lock = threading.Lock()
 
+def _within_update_window() -> bool:
+    """Return True if the current server time is inside the configured maintenance window.
+    If no window is set, always returns True (updates allowed any time)."""
+    s = load_settings()
+    start_str = (s.get("update_window_start") or "").strip()
+    end_str   = (s.get("update_window_end")   or "").strip()
+    if not start_str or not end_str:
+        return True
+    try:
+        h, m   = start_str.split(":")
+        t_start = datetime.time(int(h), int(m))
+        h, m   = end_str.split(":")
+        t_end   = datetime.time(int(h), int(m))
+    except Exception:
+        return True  # malformed config — don't block updates
+    now = datetime.datetime.now().time()
+    if t_start <= t_end:
+        return t_start <= now <= t_end       # same-day window, e.g. 02:00 – 06:00
+    return now >= t_start or now <= t_end    # overnight window, e.g. 23:00 – 05:00
+
 def rebuild_schedule():
     with scheduler_lock:
         schedule.clear()
@@ -434,6 +457,9 @@ def rebuild_schedule():
             log.info("Scheduled check every %d hr", ci)
         if ui and ui > 0:
             def auto_update_all():
+                if not _within_update_window():
+                    log.info("Auto-update skipped: outside maintenance window")
+                    return
                 for name, info in list(container_cache.items()):
                     if info.get("update_status") == "update_available" and name != SELF_NAME:
                         threading.Thread(target=_do_update, args=(name,), daemon=True).start()
@@ -511,10 +537,21 @@ def api_settings_post():
         except (TypeError, ValueError):
             return default
 
+    def _time(val):
+        v = (val or "").strip()
+        try:
+            h, m = v.split(":")
+            datetime.time(int(h), int(m))  # validate
+            return f"{int(h):02d}:{int(m):02d}"
+        except Exception:
+            return ""
+
     s = {
         "check_interval_hours":  _int(data.get("check_interval_hours"),  0),
         "update_interval_hours": _int(data.get("update_interval_hours"), 0),
         "check_on_startup":      bool(data.get("check_on_startup", True)),
+        "update_window_start":   _time(data.get("update_window_start")),
+        "update_window_end":     _time(data.get("update_window_end")),
     }
     save_settings(s)
     rebuild_schedule()
