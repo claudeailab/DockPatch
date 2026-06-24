@@ -7,7 +7,9 @@
 - Always host the image on the GitHub Container Registry (ghcr.io/claudeailab/${project_name})
 
 ## Branches & CI
-- Only the `main` branch should exist — no other branches
+- **Only the `main` branch should ever exist — no other branches, ever**
+- Feature branches are temporary: create, push, open PR, merge, then **immediately delete** the branch
+- After deleting the branch, verify via the GitHub API that only `main` remains before considering the task done
 - Always merge pull requests to main after changes
 - Always trigger / wait for the GitHub Actions build to complete after merging to main
 
