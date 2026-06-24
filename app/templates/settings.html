@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — Dockpatch</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPHJlY3QgeD0iMyIgeT0iMTMiIHdpZHRoPSIyMCIgaGVpZ2h0PSIxMSIgcng9IjMiIGZpbGw9IiMyNDk2ZWQiLz4KICA8cmVjdCB4PSI1IiAgeT0iOSIgIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIHJ4PSIwLjgiIGZpbGw9IiNmZmYiLz4KICA8cmVjdCB4PSIxMSIgeT0iOSIgIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIHJ4PSIwLjgiIGZpbGw9IiNmZmYiLz4KICA8cmVjdCB4PSIxNyIgeT0iOSIgIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIHJ4PSIwLjgiIGZpbGw9IiNmZmYiLz4KICA8cmVjdCB4PSI4IiAgeT0iMTMiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIHJ4PSIwLjgiIGZpbGw9IiNmZmYiIG9wYWNpdHk9IjAuNSIvPgogIDxyZWN0IHg9IjE0IiB5PSIxMyIgd2lkdGg9IjQiIGhlaWdodD0iNCIgcng9IjAuOCIgZmlsbD0iI2ZmZiIgb3BhY2l0eT0iMC41Ii8+CiAgPHBhdGggZD0iTTIzIDE2IFEyOSAxMiAyOCAxOCBRMjYgMjAgMjMgMTlaIiBmaWxsPSIjMjQ5NmVkIi8+CiAgPHBhdGggZD0iTTIwIDggUTIyIDQgMjUgNiIgc3Ryb2tlPSIjMjQ5NmVkIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjI2IiBjeT0iMjYiIHI9IjYiIGZpbGw9IiMxMGI5ODEiLz4KICA8dGV4dCB4PSIyNiIgeT0iMzAiIGZvbnQtc2l6ZT0iOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iYm9sZCI+JiMxMDAwMzs8L3RleHQ+Cjwvc3ZnPg==" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --border:  #2a2d3a;
+      --accent:  #3b82f6;
+      --green:   #22c55e;
+      --yellow:  #f59e0b;
+      --red:     #ef4444;
+      --muted:   #6b7280;
+      --text:    #e2e8f0;
+      --radius:  8px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-size: 16px; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; color: var(--text);
+    }
+    .logo:hover { color: var(--text); }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .version { font-size: 11px; color: var(--muted); }
+    .version-wrap { display: flex; align-items: center; gap: 6px; }
+    .github-link { color: var(--muted); display: flex; align-items: center; transition: color .15s; }
+    .github-link:hover { color: var(--text); }
+
+    /* ── nav tabs ── */
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: 20px;
+    }
+    .nav-tab {
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+    .nav-tab:hover { background: var(--border); color: var(--text); }
+    .nav-tab.active { background: var(--accent); color: #fff; }
+
+    /* ── main layout ── */
+    main {
+      padding: 28px 20px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    /* ── page title ── */
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    /* ── section card ── */
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-desc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+
+    /* ── form elements ── */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .form-hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .form-group input[type="number"],
+    .form-group input[type="text"],
+    .form-group input[type="password"],
+    .form-group input[type="time"] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 13px;
+      outline: none;
+      width: 100%;
+      transition: border-color .15s;
+    }
+    .form-group input:focus { border-color: var(--accent); }
+    .form-group input[type="time"] { color-scheme: dark; width: auto; }
+    .form-group input[type="number"] { max-width: 140px; }
+
+    .form-row-time {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .form-row-time span { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+
+    .cols-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .cols-row input[type="number"] { max-width: 80px !important; }
+    .cols-auto-label { font-size: 13px; color: var(--muted); }
+
+    /* ── toggle ── */
+    .toggle-row { display: flex; align-items: center; gap: 10px; }
+    .toggle-label { font-size: 13px; color: var(--text); }
+    .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: var(--border); border-radius: 20px;
+      cursor: pointer; transition: background .2s;
+    }
+    .slider:before {
+      content: ""; position: absolute;
+      width: 14px; height: 14px; left: 3px; top: 3px;
+      background: #fff; border-radius: 50%; transition: transform .2s;
+    }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider:before { transform: translateX(16px); }
+
+    /* ── buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: var(--radius); border: none;
+      cursor: pointer; font-size: 13px; font-weight: 500;
+      transition: opacity .15s, filter .15s; white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) { filter: brightness(1.15); }
+    .btn:disabled { opacity: .4; cursor: default; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); filter: none; }
+    .btn-danger  { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef444480; }
+    .btn-danger:hover:not(:disabled) { background: #991b1b; border-color: var(--red); filter: none; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    .section-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      margin-top: 20px;
+    }
+
+    /* ── credential list ── */
+    .cred-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 12px;
+    }
+    .cred-item + .cred-item { margin-top: 8px; }
+    .cred-info { flex: 1; min-width: 0; }
+    .cred-registry { font-weight: 600; color: var(--text); font-size: 13px; }
+    .cred-user { color: var(--muted); margin-top: 2px; }
+    .cred-token-ok { color: var(--green); }
+    .cred-empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+    .cred-warning {
+      font-size: 12px; color: #fbbf24;
+      background: #78350f20; border: 1px solid #92400e;
+      border-radius: var(--radius); padding: 10px 12px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    /* ── add-credential form ── */
+    .add-cred-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
+    }
+    .add-cred-form .form-label { margin-bottom: 4px; }
+    .add-cred-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .add-cred-inputs input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 13px;
+      outline: none;
+      width: 100%;
+      transition: border-color .15s;
+    }
+    .add-cred-inputs input:focus { border-color: var(--accent); }
+
+    /* ── toast ── */
+    #toast-container {
+      position: fixed; bottom: 20px; right: 20px;
+      display: flex; flex-direction: column; gap: 8px; z-index: 999;
+    }
+    .toast {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 16px;
+      font-size: 13px; animation: slideIn .2s ease; max-width: 320px;
+    }
+    .toast.success { border-left: 3px solid var(--green); }
+    .toast.error   { border-left: 3px solid var(--red); }
+    .toast.info    { border-left: 3px solid var(--accent); }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 640px) {
+      main { padding: 16px 12px; }
+      .add-cred-inputs { grid-template-columns: 1fr; }
+      .nav-tabs { margin-left: 10px; }
+      .nav-tab { padding: 5px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── header ── -->
+<header>
+  <div style="display:flex;align-items:center;gap:0">
+    <a href="/" class="logo"><span>🐳</span> Dockpatch</a>
+    <nav class="nav-tabs">
+      <a href="/" class="nav-tab">Dashboard</a>
+      <a href="/settings" class="nav-tab active">⚙ Settings</a>
+    </nav>
+  </div>
+  <div class="header-right">
+    <div class="version-wrap">
+      <span class="version">v{{ version }}</span>
+      <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener" class="github-link" title="View on GitHub">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+            0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+            -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+            .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+            -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09
+            2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82
+            2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01
+            2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div class="page-title">⚙ Settings</div>
+  <p class="page-subtitle">Configure automatic checks, updates, and registry authentication.</p>
+
+  <!-- ── Automation section ── -->
+  <div class="section-card">
+    <div class="section-title">🔄 Automation</div>
+    <p class="section-desc">Control how often Dockpatch checks for updates and applies them automatically.</p>
+
+    <div class="form-group">
+      <label class="form-label" for="cfg-check">Check interval (hours)</label>
+      <input type="number" id="cfg-check" min="0" placeholder="e.g. 6">
+      <span class="form-hint">How often to automatically check all containers for updates. Set to <strong>0</strong> to disable.</span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="cfg-update">Auto-update interval (hours)</label>
+      <input type="number" id="cfg-update" min="0" placeholder="e.g. 24">
+      <span class="form-hint">How often to automatically update containers that have updates available. Set to <strong>0</strong> to disable.</span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Maintenance window</label>
+      <div class="form-row-time">
+        <input type="time" id="cfg-window-start" placeholder="Start">
+        <span>to</span>
+        <input type="time" id="cfg-window-end" placeholder="End">
+      </div>
+      <span class="form-hint">Auto-updates will only run within this time window. Leave both blank to allow updates at any time. Supports overnight ranges (e.g. 22:00–04:00). Uses server time (TZ env var).</span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Startup behaviour</label>
+      <div class="toggle-row">
+        <label class="switch">
+          <input type="checkbox" id="cfg-startup">
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label">Check for updates on startup</span>
+      </div>
+    </div>
+
+    <div class="section-footer">
+      <button class="btn btn-primary" onclick="saveSettings()">Save automation settings</button>
+    </div>
+  </div>
+
+  <!-- ── Display section ── -->
+  <div class="section-card">
+    <div class="section-title">🖥 Display</div>
+    <p class="section-desc">Customise how the dashboard looks.</p>
+
+    <div class="form-group">
+      <label class="form-label">Cards per row</label>
+      <div class="cols-row">
+        <input type="number" id="cfg-cols" min="1" max="12" placeholder="Auto">
+        <span class="cols-auto-label">Leave blank for automatic (responsive)</span>
+      </div>
+    </div>
+
+    <div class="section-footer">
+      <button class="btn btn-primary" onclick="saveDisplay()">Save display settings</button>
+    </div>
+  </div>
+
+  <!-- ── Registry Auth section ── -->
+  <div class="section-card">
+    <div class="section-title">🔑 Registry Authentication</div>
+    <p class="section-desc">Add credentials to check and pull updates from private registries. For GitHub Container Registry, use your GitHub username and a Personal Access Token with the <strong>read:packages</strong> scope.</p>
+
+    <div class="cred-warning">
+      ⚠️ Credentials are stored in plain text on disk. Ensure your <code>/data</code> volume is appropriately secured.
+    </div>
+
+    <div id="creds-list"></div>
+
+    <div class="add-cred-form">
+      <label class="form-label">Add registry</label>
+      <div class="add-cred-inputs">
+        <input type="text"     id="creds-reg"   placeholder="ghcr.io"           autocomplete="off" spellcheck="false">
+        <input type="text"     id="creds-user"  placeholder="Username"           autocomplete="off" spellcheck="false">
+        <input type="password" id="creds-token" placeholder="Token / Password"   autocomplete="new-password">
+      </div>
+      <div>
+        <button class="btn btn-primary btn-sm" onclick="addCredential()">Add credential</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast-container"></div>
+
+<script>
+const COLS_KEY = 'dockpatch_cols';
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+const escAttr = escHtml;
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ── settings load / save ─────────────────────────────────────────────────────
+async function loadSettings() {
+  const r = await fetch('/api/settings');
+  const d = await r.json();
+  document.getElementById('cfg-check').value        = d.check_interval_hours  ?? 0;
+  document.getElementById('cfg-update').value       = d.update_interval_hours ?? 0;
+  document.getElementById('cfg-startup').checked    = !!d.check_on_startup;
+  document.getElementById('cfg-window-start').value = d.update_window_start   ?? '';
+  document.getElementById('cfg-window-end').value   = d.update_window_end     ?? '';
+}
+
+async function saveSettings() {
+  const checkRaw  = document.getElementById('cfg-check').value;
+  const updateRaw = document.getElementById('cfg-update').value;
+
+  const payload = {
+    check_interval_hours:  checkRaw  !== '' ? parseInt(checkRaw,  10) : 0,
+    update_interval_hours: updateRaw !== '' ? parseInt(updateRaw, 10) : 0,
+    check_on_startup:      document.getElementById('cfg-startup').checked,
+    update_window_start:   document.getElementById('cfg-window-start').value,
+    update_window_end:     document.getElementById('cfg-window-end').value,
+  };
+
+  const r = await fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const d = await r.json();
+  if (d.ok) toast('Automation settings saved', 'success');
+  else      toast('Failed to save settings', 'error');
+}
+
+// ── display settings ─────────────────────────────────────────────────────────
+function loadDisplaySettings() {
+  const saved = localStorage.getItem(COLS_KEY);
+  document.getElementById('cfg-cols').value = (saved && parseInt(saved) >= 1) ? parseInt(saved) : '';
+}
+
+function saveDisplay() {
+  const colsRaw = document.getElementById('cfg-cols').value;
+  const colsVal = colsRaw !== '' ? parseInt(colsRaw) : NaN;
+  if (!isNaN(colsVal) && colsVal >= 1) {
+    localStorage.setItem(COLS_KEY, colsVal);
+  } else {
+    localStorage.removeItem(COLS_KEY);
+  }
+  toast('Display settings saved', 'success');
+}
+
+// ── credentials ──────────────────────────────────────────────────────────────
+async function loadCredsList() {
+  const r = await fetch('/api/credentials');
+  const d = await r.json();
+  const list = document.getElementById('creds-list');
+  const entries = Object.entries(d.registries || {});
+
+  if (!entries.length) {
+    list.innerHTML = '<div class="cred-empty">No registries configured yet.</div>';
+    return;
+  }
+
+  list.innerHTML = entries.map(([reg, info]) => `
+    <div class="cred-item">
+      <div class="cred-info">
+        <div class="cred-registry">${escHtml(reg)}</div>
+        <div class="cred-user">
+          ${escHtml(info.username)}
+          &middot;
+          ${info.has_token
+            ? '<span class="cred-token-ok">✓ Token set</span>'
+            : '<span style="color:var(--red)">No token</span>'}
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="removeCredential('${escAttr(reg)}')">Remove</button>
+    </div>
+  `).join('');
+}
+
+async function addCredential() {
+  const registry = document.getElementById('creds-reg').value.trim();
+  const username = document.getElementById('creds-user').value.trim();
+  const password = document.getElementById('creds-token').value.trim();
+
+  if (!registry || !username || !password) {
+    toast('All fields are required', 'error');
+    return;
+  }
+
+  const r = await fetch('/api/credentials', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ registry, username, password }),
+  });
+  const d = await r.json();
+
+  if (d.ok) {
+    document.getElementById('creds-reg').value   = '';
+    document.getElementById('creds-user').value  = '';
+    document.getElementById('creds-token').value = '';
+    toast(`Credentials saved for ${registry}`, 'success');
+    loadCredsList();
+  } else {
+    toast(d.error || 'Failed to save credentials', 'error');
+  }
+}
+
+async function removeCredential(registry) {
+  await fetch(`/api/credentials/${encodeURIComponent(registry)}`, { method: 'DELETE' });
+  toast(`Removed ${registry}`, 'info');
+  loadCredsList();
+}
+
+// ── init ──────────────────────────────────────────────────────────────────────
+loadSettings();
+loadDisplaySettings();
+loadCredsList();
+</script>
+</body>
+</html>
