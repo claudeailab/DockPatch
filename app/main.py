@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
@@ -32,6 +32,10 @@ checking_set: set[str] = set()
 updating_set: set[str] = set()
 update_logs: dict[str, list[str]] = {}   # name -> list of log line strings
 update_done: dict[str, bool] = {}        # name -> True when finished
+
+# Limit how many completed log buffers we keep in memory to avoid unbounded growth
+MAX_COMPLETED_LOG_BUFFERS = 50
+_completed_log_order: list[str] = []    # insertion-ordered list of names whose update is done
 
 checking_all_flag = threading.Event()
 
@@ -53,6 +57,7 @@ DEFAULT_SETTINGS = {
     "update_interval_hours": 0,
     "check_on_startup":      True,
     "update_window_start":   "",
+    "update_window_end":     "",
 }
 
 def load_settings() -> dict:
@@ -128,6 +133,8 @@ def save_credentials(creds: dict):
     try:
         with os.fdopen(fd, "w") as f:
             json.dump(creds, f, indent=2)
+        # Restrict file permissions: owner read/write only (credentials are sensitive)
+        os.chmod(tmp, 0o600)
         os.replace(tmp, CREDENTIALS_FILE)
     except Exception:
         try:
@@ -273,8 +280,6 @@ def snapshot_containers() -> list[dict]:
                 update_status = cached.get("update_status", "unknown")
                 reason = cached.get("update_reason", "")
 
-            # Parse container uptime from the Status string (e.g. "Up 3 days")
-            raw_status = c.attrs.get("State", {}).get("Status", c.status)
             started_at = c.attrs.get("State", {}).get("StartedAt", "")
 
             result.append({
@@ -347,6 +352,17 @@ def _emit(name: str, line: str):
     log.info("[%s] %s", name, line)
     with cache_lock:
         update_logs.setdefault(name, []).append(line)
+
+def _evict_log_buffer(name: str):
+    """Track completed log buffers and evict oldest ones beyond the cap."""
+    global _completed_log_order
+    if name not in _completed_log_order:
+        _completed_log_order.append(name)
+    while len(_completed_log_order) > MAX_COMPLETED_LOG_BUFFERS:
+        oldest = _completed_log_order.pop(0)
+        update_logs.pop(oldest, None)
+        update_done.pop(oldest, None)
+        log.debug("Evicted update log buffer for %r", oldest)
 
 
 def _do_update(name: str) -> tuple[bool, str]:
@@ -452,6 +468,7 @@ def _do_update(name: str) -> tuple[bool, str]:
         with cache_lock:
             updating_set.discard(name)
             update_done[name] = True
+            _evict_log_buffer(name)
 
 def do_update_async(name: str):
     """Fire-and-forget update; result is reflected in container_cache."""
@@ -461,20 +478,40 @@ def do_update_async(name: str):
 scheduler_lock = threading.Lock()
 
 def _within_update_window() -> bool:
-    """Return True if the current server time is at or after the configured
-    maintenance window start time. If no start time is set, always returns
-    True (updates allowed at any time)."""
+    """Return True if the current server time falls within the configured
+    maintenance window. If no start time is set, always returns True.
+    If only a start time is set, allows updates from start time onward.
+    If both start and end are set, allows updates only between them."""
     s = load_settings()
     start_str = (s.get("update_window_start") or "").strip()
+    end_str   = (s.get("update_window_end")   or "").strip()
+
     if not start_str:
-        return True
+        return True  # no window configured — always allowed
+
     try:
-        h, m = start_str.split(":")
-        t_start = datetime.time(int(h), int(m))
+        sh, sm = start_str.split(":")
+        t_start = datetime.time(int(sh), int(sm))
     except Exception:
-        return True  # malformed config — don't block updates
+        return True  # malformed start — don't block updates
+
     now = datetime.datetime.now().time()
-    return now >= t_start
+
+    if not end_str:
+        return now >= t_start  # only start configured
+
+    try:
+        eh, em = end_str.split(":")
+        t_end = datetime.time(int(eh), int(em))
+    except Exception:
+        return now >= t_start  # malformed end — treat as start-only
+
+    if t_start <= t_end:
+        # same-day window e.g. 02:00 – 05:00
+        return t_start <= now <= t_end
+    else:
+        # overnight window e.g. 22:00 – 04:00
+        return now >= t_start or now <= t_end
 
 def rebuild_schedule():
     with scheduler_lock:
@@ -488,7 +525,7 @@ def rebuild_schedule():
         if ui and ui > 0:
             def auto_update_all():
                 if not _within_update_window():
-                    log.info("Auto-update skipped: before maintenance window start time")
+                    log.info("Auto-update skipped: outside maintenance window")
                     return
                 for name, info in list(container_cache.items()):
                     if info.get("update_status") == "update_available" and name != SELF_NAME:
@@ -620,6 +657,7 @@ def api_settings_post():
         "update_interval_hours": _int(data.get("update_interval_hours"), 0),
         "check_on_startup":      bool(data.get("check_on_startup", True)),
         "update_window_start":   _time(data.get("update_window_start")),
+        "update_window_end":     _time(data.get("update_window_end")),
     }
     save_settings(s)
     rebuild_schedule()
