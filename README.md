@@ -6,11 +6,15 @@ A lightweight self-hosted web app that monitors your Docker containers for image
 
 ## Features
 
-- 🔍 **Check for updates** on demand (per container or all at once) or on a configurable schedule
-- ⬆️ **Apply updates** on demand or automatically on a configurable minutes interval
+- 🔍 **Check for updates** on demand (per container or all at once) or on a configurable schedule — uses registry digest comparison, no image pull required
+- ⬆️ **Apply updates** on demand or automatically on a configurable hours interval
 - 🔒 **Self-update protection** — dockpatch auto-detects itself and never updates its own container while running
 - ⚙️ **Settings panel** — configure check interval, auto-update interval, and startup scan from the UI
-- 📱 Responsive UI — works great on desktop and mobile
+- 🕐 **Maintenance window** — restrict auto-updates to a specific time range (supports overnight ranges, e.g. 22:00–04:00)
+- 🔑 **Registry credentials** — add username/token pairs for private registries (Docker Hub, ghcr.io, self-hosted, etc.)
+- 🕘 **Update history** — each card shows when a container was last updated and whether it succeeded
+- ✅ **Confirmation dialog** — bulk "Update all" prompts for confirmation before applying changes
+- 📱 **Responsive UI** — works great on desktop and mobile
 
 ## Quick start
 
@@ -42,6 +46,22 @@ Then open **http://your-server:8093**
 ## Self-update protection
 
 Dockpatch automatically detects its own container at startup by matching its hostname to the running container list. It will never update itself while running. To update dockpatch, use the commands below.
+
+## Registry credentials
+
+To monitor or update containers from private registries, open the **🔑 Auth** panel and add a registry entry:
+
+| Field    | Example                        |
+|----------|--------------------------------|
+| Registry | `ghcr.io`                      |
+| Username | your GitHub username           |
+| Token    | a PAT with `read:packages` scope |
+
+> **Security note:** Credentials are stored in plain text inside your `/data` volume. Ensure the host path is appropriately secured.
+
+## Maintenance window
+
+In **Settings**, set a start and end time to restrict when auto-updates run (uses the server's `TZ` environment variable). Overnight ranges are supported — e.g. 22:00 to 04:00 will allow updates from 10 PM through 4 AM.
 
 ## Updating
 
