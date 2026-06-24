@@ -11,6 +11,7 @@
     :root {
       --bg:      #0f1117;
       --surface: #1a1d27;
+      --surface2:#1e2130;
       --border:  #2a2d3a;
       --accent:  #3b82f6;
       --green:   #22c55e;
@@ -33,7 +34,7 @@
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 0 20px;
+      padding: 0 16px;
       height: 50px;
       display: flex;
       align-items: center;
@@ -48,32 +49,10 @@
       text-decoration: none; color: var(--text);
     }
     .logo:hover { color: var(--text); }
+
     .header-right { display: flex; align-items: center; gap: 8px; }
-    .version { font-size: 11px; color: var(--muted); }
-    .version-wrap { display: flex; align-items: center; gap: 6px; }
-    .github-link { color: var(--muted); display: flex; align-items: center; transition: color .15s; }
-    .github-link:hover { color: var(--text); }
 
-    /* ── nav tabs ── */
-    .nav-tabs {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      margin-left: 20px;
-    }
-    .nav-tab {
-      padding: 6px 14px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--muted);
-      text-decoration: none;
-      transition: background .15s, color .15s;
-    }
-    .nav-tab:hover { background: var(--border); color: var(--text); }
-    .nav-tab.active { background: var(--accent); color: #fff; }
-
-    /* ── scanning pill ── */
+    /* scanning pill */
     #scanning-pill {
       display: none;
       align-items: center;
@@ -95,6 +74,132 @@
       flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* hamburger button */
+    .hamburger {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      cursor: pointer;
+      width: 34px; height: 34px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 0;
+      transition: background .15s, color .15s, border-color .15s;
+      flex-shrink: 0;
+    }
+    .hamburger:hover { background: var(--border); color: var(--text); border-color: #3a3d4a; }
+    .hamburger span {
+      display: block;
+      width: 16px; height: 2px;
+      background: currentColor;
+      border-radius: 2px;
+      transition: transform .2s, opacity .2s;
+    }
+    /* animate to × when open */
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ── drawer backdrop ── */
+    #drawer-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: #00000060;
+      z-index: 200;
+    }
+    #drawer-backdrop.open { display: block; }
+
+    /* ── drawer ── */
+    #drawer {
+      position: fixed;
+      top: 0; left: 0;
+      width: 260px;
+      height: 100%;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      z-index: 201;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform .22s cubic-bezier(.4,0,.2,1);
+      overflow-y: auto;
+    }
+    #drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      height: 50px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .drawer-logo {
+      font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; color: var(--text);
+    }
+    .drawer-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 18px; cursor: pointer; line-height: 1;
+      padding: 4px 6px; border-radius: 4px;
+    }
+    .drawer-close:hover { color: var(--text); background: var(--border); }
+
+    .drawer-section {
+      padding: 16px 10px 8px;
+    }
+    .drawer-section-label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted);
+      padding: 0 8px 8px;
+    }
+    .drawer-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      font-size: 13px; font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      transition: background .12s, color .12s;
+      border: none; background: none; width: 100%; text-align: left; cursor: pointer;
+    }
+    .drawer-link:hover { background: var(--surface2); color: var(--text); }
+    .drawer-link.active { background: #1e3a5f; color: #93c5fd; }
+    .drawer-link .d-icon { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+    .drawer-link .d-dot {
+      margin-left: auto;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--yellow);
+      flex-shrink: 0;
+    }
+    .drawer-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 6px 10px;
+    }
+
+    .drawer-footer {
+      margin-top: auto;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drawer-version { font-size: 11px; color: var(--muted); }
+    .drawer-github { color: var(--muted); display: flex; align-items: center; transition: color .15s; }
+    .drawer-github:hover { color: var(--text); }
 
     /* ── main ── */
     main { padding: 14px 20px; max-width: 1600px; margin: 0 auto; }
@@ -120,17 +225,8 @@
     .stat.c-unknown  { border-color: #374151; }
 
     /* ── toolbar ── */
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-    .toolbar-search {
-      position: relative;
-      width: 220px;
-      flex-shrink: 0;
-    }
+    .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .toolbar-search { position: relative; width: 220px; flex-shrink: 0; }
     .toolbar-search input[type="text"] {
       width: 100%;
       background: var(--surface);
@@ -142,12 +238,7 @@
       outline: none;
     }
     .toolbar-search input[type="text"]:focus { border-color: var(--accent); }
-    .toolbar-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto;
-    }
+    .toolbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
     /* ── buttons ── */
     .btn {
@@ -180,10 +271,7 @@
     .btn-sm { padding: 5px 10px; font-size: 12px; }
 
     /* ── container grid ── */
-    .grid {
-      display: grid;
-      gap: 10px;
-    }
+    .grid { display: grid; gap: 10px; }
 
     /* ── container card ── */
     .card {
@@ -191,9 +279,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      display: flex; flex-direction: column; gap: 8px;
       transition: border-color .15s;
     }
     .card:hover { border-color: #3a3d4a; }
@@ -204,53 +290,23 @@
     .card.is-error    { border-left: 3px solid #4b1c1c; }
     .card.is-self     { border-left: 3px solid #312e81; }
 
-    .card-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-    }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
     .card-name {
-      font-weight: 700;
-      font-size: 14px;
-      word-break: break-all;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
+      font-weight: 700; font-size: 14px; word-break: break-all;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     }
     .self-badge {
       font-size: 10px; background: #312e81; color: #a5b4fc;
       padding: 1px 5px; border-radius: 4px; font-weight: 600; flex-shrink: 0;
     }
     .card-state { flex-shrink: 0; }
+    .card-image { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    .card-image {
-      color: var(--muted);
-      font-size: 11px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* ── last-updated row ── */
-    .card-meta {
-      font-size: 11px;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+    .card-meta { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
     .card-meta .meta-ok   { color: var(--green); }
     .card-meta .meta-fail { color: var(--red); }
 
-    .card-bottom {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      margin-top: 2px;
-    }
+    .card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px; }
     .card-actions { display: flex; gap: 5px; }
     .self-lock { color: var(--muted); font-size: 13px; }
 
@@ -273,59 +329,35 @@
     .badge-updating  { background: #2e1065;   color: #c4b5fd;       border: 1px solid #7c3aed; animation: badge-pulse 1.4s ease-in-out infinite; }
     @keyframes badge-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
 
-    /* ── card indeterminate progress bar ── */
-    .card-progress {
-      height: 3px; border-radius: 2px;
-      background: var(--border); overflow: hidden;
-    }
-    .card-progress-bar {
-      height: 100%; width: 38%; border-radius: 2px;
-      animation: progress-slide 1.3s ease-in-out infinite;
-    }
+    /* ── card progress bar ── */
+    .card-progress { height: 3px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    .card-progress-bar { height: 100%; width: 38%; border-radius: 2px; animation: progress-slide 1.3s ease-in-out infinite; }
     .is-checking .card-progress-bar { background: var(--accent); }
     .is-updating .card-progress-bar { background: #7c3aed; }
-    @keyframes progress-slide {
-      0%   { transform: translateX(-160%); }
-      100% { transform: translateX(370%); }
-    }
+    @keyframes progress-slide { 0% { transform: translateX(-160%); } 100% { transform: translateX(370%); } }
 
     /* ── confirm modal ── */
     .modal-backdrop {
-      display: none;
-      position: fixed; inset: 0;
-      background: #00000088;
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+      display: none; position: fixed; inset: 0;
+      background: #00000088; z-index: 300;
+      align-items: center; justify-content: center; padding: 20px;
     }
     .modal-backdrop.open { display: flex; }
-
-    /* ── modal box ── */
     .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      width: 100%;
-      max-width: 420px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; width: 100%; max-width: 420px;
+      display: flex; flex-direction: column; gap: 20px;
       box-shadow: 0 24px 48px #00000066;
     }
     .modal-header { display: flex; align-items: center; justify-content: space-between; }
     .modal-title  { font-size: 16px; font-weight: 700; }
     .modal-close  {
       background: none; border: none; color: var(--muted);
-      font-size: 20px; cursor: pointer; line-height: 1;
-      padding: 2px 6px; border-radius: 4px;
+      font-size: 20px; cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: 4px;
     }
     .modal-close:hover { color: var(--text); background: var(--border); }
     .modal-body  { display: flex; flex-direction: column; gap: 16px; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
-
-    /* ── confirm dialog ── */
     .confirm-msg { font-size: 14px; color: var(--text); line-height: 1.5; }
     .confirm-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
@@ -353,47 +385,80 @@
       .stat { min-width: 0; padding: 7px 10px; flex: unset; }
       .stat-val { font-size: 18px; }
       .toolbar-search { width: 140px; }
-      .nav-tabs { margin-left: 10px; }
-      .nav-tab { padding: 5px 10px; }
     }
   </style>
 </head>
 <body>
 
+<!-- ── drawer backdrop ── -->
+<div id="drawer-backdrop" onclick="closeDrawer()"></div>
+
+<!-- ── drawer ── -->
+<nav id="drawer" aria-label="Main navigation" aria-hidden="true">
+  <div class="drawer-header">
+    <a href="/" class="drawer-logo"><span>🐳</span> Dockpatch</a>
+    <button class="drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
+  </div>
+
+  <div class="drawer-section">
+    <div class="drawer-section-label">Navigation</div>
+    <a href="/" class="drawer-link active">
+      <span class="d-icon">📦</span> Dashboard
+    </a>
+  </div>
+
+  <hr class="drawer-divider">
+
+  <div class="drawer-section">
+    <div class="drawer-section-label">Settings</div>
+    <a href="/settings#automation" class="drawer-link">
+      <span class="d-icon">🔄</span> Automation
+    </a>
+    <a href="/settings#auth" class="drawer-link">
+      <span class="d-icon">🔑</span> Registry Auth
+      <span class="d-dot" id="drawer-auth-dot" style="display:none"></span>
+    </a>
+    <a href="/settings#display" class="drawer-link">
+      <span class="d-icon">🖥</span> Display
+    </a>
+    <a href="/settings#about" class="drawer-link">
+      <span class="d-icon">ℹ️</span> About
+    </a>
+  </div>
+
+  <div class="drawer-footer">
+    <span class="drawer-version">v{{ version }}</span>
+    <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener"
+       class="drawer-github" title="View on GitHub">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+          0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+          -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+          .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+          -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09
+          2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82
+          2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01
+          2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+    </a>
+  </div>
+</nav>
+
 <!-- ── header ── -->
 <header>
-  <div style="display:flex;align-items:center;gap:0">
-    <a href="/" class="logo"><span>🐳</span> Dockpatch</a>
-    <nav class="nav-tabs">
-      <a href="/" class="nav-tab active">Dashboard</a>
-      <a href="/settings" class="nav-tab">⚙ Settings</a>
-    </nav>
-  </div>
+  <a href="/" class="logo"><span>🐳</span> Dockpatch</a>
   <div class="header-right">
     <div id="scanning-pill">
       <div class="pill-spinner"></div>
       <span>Scanning…</span>
     </div>
-    <div class="version-wrap">
-      <span class="version">v{{ version }}</span>
-      <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener" class="github-link" title="View on GitHub">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
-            0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
-            -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
-            .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
-            -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09
-            2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82
-            2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01
-            2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-        </svg>
-      </a>
-    </div>
+    <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </header>
 
 <main>
-
   <!-- summary cards -->
   <div class="summary">
     <div class="stat">
@@ -427,7 +492,6 @@
 
   <!-- grid -->
   <div class="grid" id="grid"></div>
-
 </main>
 
 <!-- ── confirm update-all modal ── -->
@@ -455,11 +519,45 @@ let containers = [];
 let wasChecking = false;
 let pollInFlight = false;
 let isScanning = false;
-
-// ── adaptive polling ──
 let pollInterval = 4000;
 let pollTimer = null;
 
+// ── drawer ──────────────────────────────────────────────────────────────────
+function toggleDrawer() {
+  const drawer   = document.getElementById('drawer');
+  const backdrop = document.getElementById('drawer-backdrop');
+  const btn      = document.getElementById('hamburger-btn');
+  const isOpen   = drawer.classList.contains('open');
+  if (isOpen) {
+    closeDrawer();
+  } else {
+    drawer.classList.add('open');
+    backdrop.classList.add('open');
+    btn.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+    drawer.setAttribute('aria-hidden', 'false');
+  }
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-backdrop').classList.remove('open');
+  const btn = document.getElementById('hamburger-btn');
+  btn.classList.remove('open');
+  btn.setAttribute('aria-expanded', 'false');
+  document.getElementById('drawer').setAttribute('aria-hidden', 'true');
+}
+
+// show auth dot if credentials exist
+async function checkAuthDot() {
+  try {
+    const r = await fetch('/api/credentials');
+    const d = await r.json();
+    const hasCreds = Object.keys(d.registries || {}).length > 0;
+    document.getElementById('drawer-auth-dot').style.display = hasCreds ? 'block' : 'none';
+  } catch (_) {}
+}
+
+// ── adaptive polling ──────────────────────────────────────────────────────────
 function schedulePoll() {
   if (pollTimer) clearTimeout(pollTimer);
   pollTimer = setTimeout(async () => {
@@ -468,7 +566,7 @@ function schedulePoll() {
   }, pollInterval);
 }
 
-// ── stat counter animation ──
+// ── stat counter animation ────────────────────────────────────────────────────
 const statDisplayed = {};
 const statAnimFrames = {};
 
@@ -480,30 +578,20 @@ function animateStat(id, target) {
   }
   const current = statDisplayed[id];
   if (current === target) return;
-  if (statAnimFrames[id]) {
-    cancelAnimationFrame(statAnimFrames[id]);
-    statAnimFrames[id] = null;
-  }
+  if (statAnimFrames[id]) { cancelAnimationFrame(statAnimFrames[id]); statAnimFrames[id] = null; }
   const direction = target > current ? 1 : -1;
   function step() {
     statDisplayed[id] += direction;
     document.getElementById(id).textContent = statDisplayed[id];
-    if (statDisplayed[id] !== target) {
-      statAnimFrames[id] = requestAnimationFrame(step);
-    } else {
-      statAnimFrames[id] = null;
-    }
+    if (statDisplayed[id] !== target) statAnimFrames[id] = requestAnimationFrame(step);
+    else statAnimFrames[id] = null;
   }
   statAnimFrames[id] = requestAnimationFrame(step);
 }
 
-// ── helpers ──
+// ── helpers ───────────────────────────────────────────────────────────────────
 function escHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 const escAttr = escHtml;
 
@@ -511,18 +599,16 @@ function formatRelativeTime(isoStr) {
   if (!isoStr) return '';
   const date = new Date(isoStr);
   if (isNaN(date)) return '';
-  const diffMs  = Date.now() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
+  const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
   if (diffSec < 60)  return 'just now';
   const diffMin = Math.floor(diffSec / 60);
   if (diffMin < 60)  return `${diffMin}m ago`;
   const diffHr  = Math.floor(diffMin / 60);
   if (diffHr < 24)   return `${diffHr}h ago`;
-  const diffDay = Math.floor(diffHr / 24);
-  return `${diffDay}d ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
 }
 
-// ── grid columns ──
+// ── grid columns ──────────────────────────────────────────────────────────────
 const COLS_KEY = 'dockpatch_cols';
 
 function applyColumns() {
@@ -534,7 +620,6 @@ function applyColumns() {
     applyResponsiveCols();
   }
 }
-
 function applyResponsiveCols() {
   const saved = localStorage.getItem(COLS_KEY);
   if (saved && parseInt(saved) >= 1) return;
@@ -545,11 +630,10 @@ function applyResponsiveCols() {
   else if (w <= 1100) grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
   else                grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
 }
-
 window.addEventListener('resize', applyResponsiveCols);
 applyColumns();
 
-// ── poll ──
+// ── poll ──────────────────────────────────────────────────────────────────────
 async function poll() {
   if (pollInFlight) return;
   pollInFlight = true;
@@ -572,9 +656,7 @@ async function poll() {
     const busyAny    = isScanning || containers.some(c => c.update_status === 'updating' || c.update_status === 'checking');
     document.getElementById('check-all-btn').disabled  = isScanning;
     document.getElementById('update-all-btn').disabled = !hasUpdates || busyAny;
-
     pollInterval = busyAny ? 1500 : 5000;
-
     updateStats(isScanning);
   } finally {
     pollInFlight = false;
@@ -589,34 +671,28 @@ function toast(msg, type = 'info') {
   setTimeout(() => el.remove(), 4000);
 }
 
-// ── render ──
+// ── render ────────────────────────────────────────────────────────────────────
 function renderGrid() {
   const query = document.getElementById('search').value.toLowerCase();
   const grid  = document.getElementById('grid');
-
   const filtered = containers.filter(c =>
     c.name.toLowerCase().includes(query) || c.image.toLowerCase().includes(query)
   );
-
   const topStatus = s => (s === 'update_available' || s === 'updating') ? 0 : 1;
   filtered.sort((a, b) => {
     const diff = topStatus(a.update_status) - topStatus(b.update_status);
     return diff !== 0 ? diff : a.name.localeCompare(b.name);
   });
-
-  if (filtered.length === 0) {
-    grid.innerHTML = '<div class="empty">No containers found</div>';
-    return;
-  }
+  if (filtered.length === 0) { grid.innerHTML = '<div class="empty">No containers found</div>'; return; }
 
   grid.innerHTML = filtered.map(c => {
     let cardClass = 'card';
-    if (c.is_self)                                    cardClass += ' is-self';
-    else if (c.update_status === 'update_available')  cardClass += ' has-update';
-    else if (c.update_status === 'checking')          cardClass += ' is-checking';
-    else if (c.update_status === 'updating')          cardClass += ' is-updating';
-    else if (c.update_status === 'custom')            cardClass += ' is-custom';
-    else if (c.update_status === 'error')             cardClass += ' is-error';
+    if      (c.is_self)                                   cardClass += ' is-self';
+    else if (c.update_status === 'update_available')      cardClass += ' has-update';
+    else if (c.update_status === 'checking')              cardClass += ' is-checking';
+    else if (c.update_status === 'updating')              cardClass += ' is-updating';
+    else if (c.update_status === 'custom')                cardClass += ' is-custom';
+    else if (c.update_status === 'error')                 cardClass += ' is-error';
 
     let statusBadge;
     if      (c.status === 'running') statusBadge = '<span class="badge badge-running">▶ running</span>';
@@ -651,9 +727,7 @@ function renderGrid() {
       const rel   = formatRelativeTime(c.last_updated);
       const okStr = c.last_update_ok === true
         ? '<span class="meta-ok">✓</span>'
-        : c.last_update_ok === false
-          ? '<span class="meta-fail">✕ failed</span>'
-          : '';
+        : c.last_update_ok === false ? '<span class="meta-fail">✕ failed</span>' : '';
       const imgStr = c.last_update_image ? ` · <span title="${escAttr(c.last_update_image)}">${escHtml(c.last_update_image.split('/').pop())}</span>` : '';
       metaHtml = `<div class="card-meta">${okStr} Updated ${escHtml(rel)}${imgStr}</div>`;
     }
@@ -679,67 +753,55 @@ function updateStats(scanning) {
   const unknown = containers.filter(c => c.update_status === 'unknown').length;
   const errors  = containers.filter(c => c.update_status === 'error').length;
   const custom  = containers.filter(c => c.update_status === 'custom').length;
-
   animateStat('s-total',    containers.length);
   animateStat('s-updates',  containers.filter(c => c.update_status === 'update_available').length);
   animateStat('s-uptodate', containers.filter(c => c.update_status === 'up_to_date').length);
   animateStat('s-unknown',  unknown + errors + custom);
-
   let unknownLabel;
-  if (scanning) {
-    unknownLabel = 'Checking…';
-  } else if (errors > 0 && unknown === 0 && custom === 0) {
-    unknownLabel = 'Errors';
-  } else if (errors === 0 && unknown === 0 && custom > 0) {
-    unknownLabel = 'Custom images';
-  } else {
-    unknownLabel = 'Not checked / other';
-  }
+  if (scanning) unknownLabel = 'Checking…';
+  else if (errors > 0 && unknown === 0 && custom === 0) unknownLabel = 'Errors';
+  else if (errors === 0 && unknown === 0 && custom > 0) unknownLabel = 'Custom images';
+  else unknownLabel = 'Not checked / other';
   document.getElementById('s-unknown-label').textContent = unknownLabel;
   renderGrid();
 }
 
-// ── actions ──
+// ── actions ───────────────────────────────────────────────────────────────────
 async function checkAll(btn) {
   btn.disabled = true;
   await fetch('/api/check/all', { method: 'POST' });
   poll();
 }
-
 function confirmUpdateAll() {
   const count = containers.filter(c => c.update_status === 'update_available' && !c.is_self).length;
   document.getElementById('confirm-count').textContent = count;
   document.getElementById('confirm-modal').classList.add('open');
 }
-function closeConfirm() {
-  document.getElementById('confirm-modal').classList.remove('open');
-}
-function confirmBackdropClose(e) {
-  if (e.target === document.getElementById('confirm-modal')) closeConfirm();
-}
-
+function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+function confirmBackdropClose(e) { if (e.target === document.getElementById('confirm-modal')) closeConfirm(); }
 async function doUpdateAll() {
   closeConfirm();
   document.getElementById('update-all-btn').disabled = true;
   await fetch('/api/update/all', { method: 'POST' });
   poll();
 }
-
 async function checkOne(btn, name) {
   btn.disabled = true;
   await fetch(`/api/check/${encodeURIComponent(name)}`, { method: 'POST' });
   poll();
 }
-
 async function updateOne(btn, name) {
   btn.disabled = true;
   await fetch(`/api/update/${encodeURIComponent(name)}`, { method: 'POST' });
   poll();
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeConfirm(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeConfirm(); closeDrawer(); }
+});
 
 applyColumns();
+checkAuthDot();
 poll();
 schedulePoll();
 </script>
