@@ -42,12 +42,36 @@
       top: 0;
       z-index: 100;
     }
-    .logo { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .logo {
+      font-size: 16px; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; color: var(--text);
+    }
+    .logo:hover { color: var(--text); }
     .header-right { display: flex; align-items: center; gap: 8px; }
     .version { font-size: 11px; color: var(--muted); }
     .version-wrap { display: flex; align-items: center; gap: 6px; }
     .github-link { color: var(--muted); display: flex; align-items: center; transition: color .15s; }
     .github-link:hover { color: var(--text); }
+
+    /* ── nav tabs ── */
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: 20px;
+    }
+    .nav-tab {
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+    .nav-tab:hover { background: var(--border); color: var(--text); }
+    .nav-tab.active { background: var(--accent); color: #fff; }
 
     /* ── scanning pill ── */
     #scanning-pill {
@@ -139,8 +163,6 @@
     .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); filter: none; }
     .btn-danger  { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef444480; }
     .btn-danger:hover:not(:disabled) { background: #991b1b; border-color: var(--red); filter: none; }
-    .btn-settings { background: #1e2a3a; color: var(--text); border: 1px solid #3b82f680; }
-    .btn-settings:hover:not(:disabled) { background: #243448; border-color: var(--accent); filter: none; }
     .btn-success {
       background: #16803c; color: #fff;
       border: 1px solid #4ade80;
@@ -301,95 +323,7 @@
     }
     .modal-close:hover { color: var(--text); background: var(--border); }
     .modal-body  { display: flex; flex-direction: column; gap: 16px; }
-    .form-group  { display: flex; flex-direction: column; gap: 6px; }
-    .form-label  { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    .form-hint   { font-size: 11px; color: var(--muted); }
-    .form-group input[type="number"] {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      padding: 7px 10px;
-      font-size: 13px;
-      outline: none;
-      width: 100%;
-    }
-    .form-group input[type="number"]:focus,
-    .form-group input[type="text"]:focus,
-    .form-group input[type="password"]:focus,
-    .form-group input[type="time"]:focus { border-color: var(--accent); }
-    .form-group input[type="text"],
-    .form-group input[type="password"],
-    .form-group input[type="time"] {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      padding: 7px 10px;
-      font-size: 13px;
-      outline: none;
-      width: 100%;
-    }
-    .form-group input[type="time"] { color-scheme: dark; width: auto; }
-    .form-row-time {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .form-row-time span { color: var(--muted); font-size: 12px; flex-shrink: 0; }
-
-    /* ── credential list ── */
-    .cred-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      font-size: 12px;
-    }
-    .cred-item + .cred-item { margin-top: 6px; }
-    .cred-info { flex: 1; min-width: 0; }
-    .cred-registry { font-weight: 600; color: var(--text); }
-    .cred-user { color: var(--muted); margin-top: 1px; }
-    .cred-empty { color: var(--muted); font-size: 12px; padding: 4px 0; }
-    .cred-warning {
-      font-size: 11px; color: #fbbf24;
-      background: #78350f20; border: 1px solid #92400e;
-      border-radius: var(--radius); padding: 7px 10px;
-    }
-
-    .toggle-row  { display: flex; align-items: center; gap: 10px; }
-    .toggle-label { font-size: 13px; color: var(--text); }
-    .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; inset: 0;
-      background: var(--border); border-radius: 20px;
-      cursor: pointer; transition: background .2s;
-    }
-    .slider:before {
-      content: ""; position: absolute;
-      width: 14px; height: 14px; left: 3px; top: 3px;
-      background: #fff; border-radius: 50%; transition: transform .2s;
-    }
-    .switch input:checked + .slider { background: var(--accent); }
-    .switch input:checked + .slider:before { transform: translateX(16px); }
     .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
-
-    /* ── columns input row ── */
-    .cols-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .cols-row input[type="number"] {
-      width: 70px !important;
-    }
-    .cols-auto-label {
-      font-size: 13px;
-      color: var(--muted);
-    }
 
     /* ── confirm dialog ── */
     .confirm-msg { font-size: 14px; color: var(--text); line-height: 1.5; }
@@ -419,6 +353,8 @@
       .stat { min-width: 0; padding: 7px 10px; flex: unset; }
       .stat-val { font-size: 18px; }
       .toolbar-search { width: 140px; }
+      .nav-tabs { margin-left: 10px; }
+      .nav-tab { padding: 5px 10px; }
     }
   </style>
 </head>
@@ -426,14 +362,18 @@
 
 <!-- ── header ── -->
 <header>
-  <div class="logo"><span>🐳</span> Dockpatch</div>
+  <div style="display:flex;align-items:center;gap:0">
+    <a href="/" class="logo"><span>🐳</span> Dockpatch</a>
+    <nav class="nav-tabs">
+      <a href="/" class="nav-tab active">Dashboard</a>
+      <a href="/settings" class="nav-tab">⚙ Settings</a>
+    </nav>
+  </div>
   <div class="header-right">
     <div id="scanning-pill">
       <div class="pill-spinner"></div>
       <span>Scanning…</span>
     </div>
-    <button class="btn btn-settings btn-sm" onclick="openCredentials()">🔑 Auth</button>
-    <button class="btn btn-settings btn-sm" onclick="openSettings()">⚙ Settings</button>
     <div class="version-wrap">
       <span class="version">v{{ version }}</span>
       <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener" class="github-link" title="View on GitHub">
@@ -490,83 +430,6 @@
 
 </main>
 
-<!-- ── settings modal ── -->
-<div class="modal-backdrop" id="settings-modal" onclick="backdropClose(event)">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">⚙ Settings</span>
-      <button class="modal-close" onclick="closeSettings()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Check interval</label>
-        <input type="number" id="cfg-check" min="0" placeholder="e.g. 6">
-        <span class="form-hint">Hours between automatic update checks. 0 = disabled.</span>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Auto-update interval</label>
-        <input type="number" id="cfg-update" min="0" placeholder="e.g. 24">
-        <span class="form-hint">Hours between automatic updates for containers with available updates. 0 = disabled.</span>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Maintenance window</label>
-        <div class="form-row-time">
-          <input type="time" id="cfg-window-start" placeholder="Start">
-          <span>to</span>
-          <input type="time" id="cfg-window-end" placeholder="End">
-        </div>
-        <span class="form-hint">Auto-updates only run within this time window. Leave both blank to allow updates at any time. Supports overnight ranges (e.g. 22:00–04:00). Uses server time (TZ env var).</span>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Startup behaviour</label>
-        <div class="toggle-row">
-          <label class="switch">
-            <input type="checkbox" id="cfg-startup">
-            <span class="slider"></span>
-          </label>
-          <span class="toggle-label">Check for updates on start</span>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Cards per row</label>
-        <div class="cols-row">
-          <input type="number" id="cfg-cols" min="1" max="12" placeholder="Auto">
-          <span class="cols-auto-label">Leave blank for automatic (responsive)</span>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="closeSettings()">Cancel</button>
-      <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save settings</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── credentials modal ── -->
-<div class="modal-backdrop" id="creds-modal" onclick="credsBackdropClose(event)">
-  <div class="modal" style="max-width:460px">
-    <div class="modal-header">
-      <span class="modal-title">🔑 Registry Credentials</span>
-      <button class="modal-close" onclick="closeCredentials()">✕</button>
-    </div>
-    <div class="modal-body">
-      <p class="form-hint">Add credentials to check and pull updates from private registries. For GitHub Container Registry use your GitHub username and a Personal Access Token with <strong>read:packages</strong> scope.</p>
-      <div class="cred-warning">⚠️ Credentials are stored in plain text on disk. Ensure your <code>/data</code> volume is appropriately secured.</div>
-      <div id="creds-list" style="margin-top:12px"></div>
-      <div class="form-group" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-        <label class="form-label">Add Registry</label>
-        <input type="text"     id="creds-reg"   placeholder="ghcr.io"          autocomplete="off" spellcheck="false">
-        <input type="text"     id="creds-user"  placeholder="Username"          autocomplete="off" spellcheck="false">
-        <input type="password" id="creds-token" placeholder="Token / Password"  autocomplete="new-password">
-        <button class="btn btn-primary btn-sm" onclick="addCredential()" style="align-self:flex-start;margin-top:2px">Add</button>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="closeCredentials()">Close</button>
-    </div>
-  </div>
-</div>
-
 <!-- ── confirm update-all modal ── -->
 <div class="modal-backdrop" id="confirm-modal" onclick="confirmBackdropClose(event)">
   <div class="modal" style="max-width:380px">
@@ -594,7 +457,6 @@ let pollInFlight = false;
 let isScanning = false;
 
 // ── adaptive polling ──
-// Poll faster while something is happening, slower when idle.
 let pollInterval = 4000;
 let pollTimer = null;
 
@@ -616,28 +478,22 @@ function animateStat(id, target) {
     document.getElementById(id).textContent = target;
     return;
   }
-
   const current = statDisplayed[id];
   if (current === target) return;
-
   if (statAnimFrames[id]) {
     cancelAnimationFrame(statAnimFrames[id]);
     statAnimFrames[id] = null;
   }
-
   const direction = target > current ? 1 : -1;
-
   function step() {
     statDisplayed[id] += direction;
     document.getElementById(id).textContent = statDisplayed[id];
-
     if (statDisplayed[id] !== target) {
       statAnimFrames[id] = requestAnimationFrame(step);
     } else {
       statAnimFrames[id] = null;
     }
   }
-
   statAnimFrames[id] = requestAnimationFrame(step);
 }
 
@@ -693,60 +549,6 @@ function applyResponsiveCols() {
 window.addEventListener('resize', applyResponsiveCols);
 applyColumns();
 
-// ── settings modal ──
-function openSettings() {
-  loadSettings();
-  const saved = localStorage.getItem(COLS_KEY);
-  document.getElementById('cfg-cols').value = (saved && parseInt(saved) >= 1) ? parseInt(saved) : '';
-  document.getElementById('settings-modal').classList.add('open');
-}
-function closeSettings() {
-  document.getElementById('settings-modal').classList.remove('open');
-}
-function backdropClose(e) {
-  if (e.target === document.getElementById('settings-modal')) closeSettings();
-}
-
-async function loadSettings() {
-  const r = await fetch('/api/settings');
-  const d = await r.json();
-  document.getElementById('cfg-check').value        = d.check_interval_hours  ?? 0;
-  document.getElementById('cfg-update').value       = d.update_interval_hours ?? 0;
-  document.getElementById('cfg-startup').checked    = !!d.check_on_startup;
-  document.getElementById('cfg-window-start').value = d.update_window_start   ?? '';
-  document.getElementById('cfg-window-end').value   = d.update_window_end     ?? '';
-}
-
-async function saveSettings() {
-  const colsRaw = document.getElementById('cfg-cols').value;
-  const colsVal = colsRaw !== '' ? parseInt(colsRaw) : NaN;
-  if (!isNaN(colsVal) && colsVal >= 1) {
-    localStorage.setItem(COLS_KEY, colsVal);
-  } else {
-    localStorage.removeItem(COLS_KEY);
-  }
-  applyColumns();
-
-  const checkRaw  = document.getElementById('cfg-check').value;
-  const updateRaw = document.getElementById('cfg-update').value;
-
-  const payload = {
-    check_interval_hours:  checkRaw  !== '' ? parseInt(checkRaw,  10) : 0,
-    update_interval_hours: updateRaw !== '' ? parseInt(updateRaw, 10) : 0,
-    check_on_startup:      document.getElementById('cfg-startup').checked,
-    update_window_start:   document.getElementById('cfg-window-start').value,
-    update_window_end:     document.getElementById('cfg-window-end').value,
-  };
-  const r = await fetch('/api/settings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const d = await r.json();
-  if (d.ok) { toast('Settings saved', 'success'); closeSettings(); }
-  else toast('Failed to save settings', 'error');
-}
-
 // ── poll ──
 async function poll() {
   if (pollInFlight) return;
@@ -771,7 +573,6 @@ async function poll() {
     document.getElementById('check-all-btn').disabled  = isScanning;
     document.getElementById('update-all-btn').disabled = !hasUpdates || busyAny;
 
-    // Adaptive polling: fast when busy, slow when idle
     pollInterval = busyAny ? 1500 : 5000;
 
     updateStats(isScanning);
@@ -797,7 +598,6 @@ function renderGrid() {
     c.name.toLowerCase().includes(query) || c.image.toLowerCase().includes(query)
   );
 
-  // update_available and updating stay pinned to top; everything else alphabetical
   const topStatus = s => (s === 'update_available' || s === 'updating') ? 0 : 1;
   filtered.sort((a, b) => {
     const diff = topStatus(a.update_status) - topStatus(b.update_status);
@@ -811,12 +611,12 @@ function renderGrid() {
 
   grid.innerHTML = filtered.map(c => {
     let cardClass = 'card';
-    if (c.is_self)                              cardClass += ' is-self';
-    else if (c.update_status === 'update_available') cardClass += ' has-update';
-    else if (c.update_status === 'checking')    cardClass += ' is-checking';
-    else if (c.update_status === 'updating')    cardClass += ' is-updating';
-    else if (c.update_status === 'custom')      cardClass += ' is-custom';
-    else if (c.update_status === 'error')       cardClass += ' is-error';
+    if (c.is_self)                                    cardClass += ' is-self';
+    else if (c.update_status === 'update_available')  cardClass += ' has-update';
+    else if (c.update_status === 'checking')          cardClass += ' is-checking';
+    else if (c.update_status === 'updating')          cardClass += ' is-updating';
+    else if (c.update_status === 'custom')            cardClass += ' is-custom';
+    else if (c.update_status === 'error')             cardClass += ' is-error';
 
     let statusBadge;
     if      (c.status === 'running') statusBadge = '<span class="badge badge-running">▶ running</span>';
@@ -846,7 +646,6 @@ function renderGrid() {
       }
     }
 
-    // Last-updated metadata row
     let metaHtml = '';
     if (c.last_updated) {
       const rel   = formatRelativeTime(c.last_updated);
@@ -877,16 +676,14 @@ function renderGrid() {
 }
 
 function updateStats(scanning) {
-  const unknown = containers.filter(c =>
-    c.update_status === 'unknown'
-  ).length;
+  const unknown = containers.filter(c => c.update_status === 'unknown').length;
   const errors  = containers.filter(c => c.update_status === 'error').length;
   const custom  = containers.filter(c => c.update_status === 'custom').length;
 
-  animateStat('s-total',   containers.length);
-  animateStat('s-updates', containers.filter(c => c.update_status === 'update_available').length);
-  animateStat('s-uptodate',containers.filter(c => c.update_status === 'up_to_date').length);
-  animateStat('s-unknown', unknown + errors + custom);
+  animateStat('s-total',    containers.length);
+  animateStat('s-updates',  containers.filter(c => c.update_status === 'update_available').length);
+  animateStat('s-uptodate', containers.filter(c => c.update_status === 'up_to_date').length);
+  animateStat('s-unknown',  unknown + errors + custom);
 
   let unknownLabel;
   if (scanning) {
@@ -909,7 +706,6 @@ async function checkAll(btn) {
   poll();
 }
 
-// ── confirm update-all dialog ──
 function confirmUpdateAll() {
   const count = containers.filter(c => c.update_status === 'update_available' && !c.is_self).length;
   document.getElementById('confirm-count').textContent = count;
@@ -925,7 +721,6 @@ function confirmBackdropClose(e) {
 async function doUpdateAll() {
   closeConfirm();
   document.getElementById('update-all-btn').disabled = true;
-  // Use the dedicated /api/update/all endpoint for efficiency
   await fetch('/api/update/all', { method: 'POST' });
   poll();
 }
@@ -942,69 +737,7 @@ async function updateOne(btn, name) {
   poll();
 }
 
-// ── credentials ──
-function openCredentials() {
-  loadCredsList();
-  document.getElementById('creds-modal').classList.add('open');
-}
-function closeCredentials() {
-  document.getElementById('creds-modal').classList.remove('open');
-  document.getElementById('creds-reg').value   = '';
-  document.getElementById('creds-user').value  = '';
-  document.getElementById('creds-token').value = '';
-}
-function credsBackdropClose(e) {
-  if (e.target === document.getElementById('creds-modal')) closeCredentials();
-}
-
-async function loadCredsList() {
-  const r = await fetch('/api/credentials');
-  const d = await r.json();
-  const list = document.getElementById('creds-list');
-  const entries = Object.entries(d.registries || {});
-  if (!entries.length) {
-    list.innerHTML = '<div class="cred-empty">No registries configured.</div>';
-    return;
-  }
-  list.innerHTML = entries.map(([reg, info]) => `
-    <div class="cred-item">
-      <div class="cred-info">
-        <div class="cred-registry">${escHtml(reg)}</div>
-        <div class="cred-user">${escHtml(info.username)} &middot; ${info.has_token ? 'Token ✓' : 'No token'}</div>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="removeCredential('${escAttr(reg)}')">Remove</button>
-    </div>`).join('');
-}
-
-async function addCredential() {
-  const registry = document.getElementById('creds-reg').value.trim();
-  const username = document.getElementById('creds-user').value.trim();
-  const password = document.getElementById('creds-token').value.trim();
-  if (!registry || !username || !password) { toast('All fields are required', 'error'); return; }
-  const r = await fetch('/api/credentials', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ registry, username, password }),
-  });
-  const d = await r.json();
-  if (d.ok) {
-    document.getElementById('creds-reg').value   = '';
-    document.getElementById('creds-user').value  = '';
-    document.getElementById('creds-token').value = '';
-    toast(`Credentials saved for ${registry}`, 'success');
-    loadCredsList();
-  } else {
-    toast(d.error || 'Failed to save', 'error');
-  }
-}
-
-async function removeCredential(registry) {
-  await fetch(`/api/credentials/${encodeURIComponent(registry)}`, { method: 'DELETE' });
-  toast(`Removed ${registry}`, 'info');
-  loadCredsList();
-}
-
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSettings(); closeCredentials(); closeConfirm(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeConfirm(); });
 
 applyColumns();
 poll();
