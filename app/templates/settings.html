@@ -21,6 +21,7 @@
       --yellow:    #f5a623;
       --red:       #ff5151;
       --purple:    #a78bfa;
+      --orange:    #fb923c;
       --muted:     #5a6282;
       --muted2:    #7b84a3;
       --text:      #dde3f5;
@@ -247,6 +248,31 @@
     .add-cred-title { font-size: 11px; font-weight: 600; color: var(--muted2); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
     .add-cred-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 
+    /* ── excluded ── */
+    .excl-item {
+      display: flex; align-items: center; gap: 13px;
+      padding: 12px 14px; background: var(--surface2);
+      border: 1px solid var(--border2); border-radius: var(--radius);
+      transition: border-color .15s;
+    }
+    .excl-item:hover { border-color: var(--orange); }
+    .excl-icon-wrap {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: rgba(251,146,60,.1); border: 1px solid rgba(251,146,60,.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .excl-name { font-weight: 600; color: var(--text); font-size: 13px; flex: 1; min-width: 0; word-break: break-all; }
+    .excl-empty { color: var(--muted); font-size: 13px; padding: 14px 0; text-align: center; }
+
+    .add-excl-block {
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: var(--radius); padding: 16px; margin-top: 16px;
+    }
+    .add-excl-title { font-size: 11px; font-weight: 600; color: var(--muted2); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+    .add-excl-row { display: flex; gap: 10px; align-items: flex-end; }
+    .add-excl-row input { flex: 1; }
+
     /* ── about ── */
     .about-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); }
     .about-row:last-child { border-bottom: none; }
@@ -287,6 +313,7 @@
       .sidebar-link { padding: 6px 12px; white-space: nowrap; width: auto; }
       .settings-content { padding: 20px 16px; max-width: 100%; }
       .add-cred-grid { grid-template-columns: 1fr; }
+      .add-excl-row { flex-direction: column; align-items: stretch; }
     }
   </style>
 </head>
@@ -310,6 +337,7 @@
     <div class="drawer-section-label">Settings</div>
     <button class="drawer-link active" data-panel="automation" onclick="drawerSwitchPanel(this)"><span class="d-icon">⏱</span> Automation</button>
     <button class="drawer-link" data-panel="auth" onclick="drawerSwitchPanel(this)"><span class="d-icon">🔑</span> Registry Auth<span class="d-dot" id="drawer-auth-dot" style="display:none"></span></button>
+    <button class="drawer-link" data-panel="excluded" onclick="drawerSwitchPanel(this)"><span class="d-icon">🚫</span> Excluded<span class="d-dot" id="drawer-excluded-dot" style="display:none"></span></button>
     <button class="drawer-link" data-panel="display" onclick="drawerSwitchPanel(this)"><span class="d-icon">◻</span> Display</button>
     <button class="drawer-link" data-panel="about" onclick="drawerSwitchPanel(this)"><span class="d-icon">ℹ</span> About</button>
   </div>
@@ -336,6 +364,7 @@
     <div class="sidebar-heading">Settings</div>
     <button class="sidebar-link active" data-panel="automation" onclick="switchPanel(this)"><span class="icon">⏱</span> Automation</button>
     <button class="sidebar-link" data-panel="auth" onclick="switchPanel(this)"><span class="icon">🔑</span> Registry Auth<span class="badge-dot" id="auth-dot" style="display:none"></span></button>
+    <button class="sidebar-link" data-panel="excluded" onclick="switchPanel(this)"><span class="icon">🚫</span> Excluded<span class="badge-dot" id="excluded-dot" style="display:none"></span></button>
     <button class="sidebar-link" data-panel="display" onclick="switchPanel(this)"><span class="icon">◻</span> Display</button>
     <hr class="sidebar-divider">
     <button class="sidebar-link" data-panel="about" onclick="switchPanel(this)"><span class="icon">ℹ</span> About</button>
@@ -451,6 +480,39 @@
       </div>
     </section>
 
+    <!-- ══ EXCLUDED ══ -->
+    <section class="settings-panel" id="panel-excluded">
+      <div class="panel-header">
+        <div class="panel-title">Excluded Containers</div>
+        <p class="panel-subtitle">Containers on this list will never be updated by Dockpatch — neither manually via the dashboard nor automatically via the scheduler. You can also toggle exclusion directly from each container card on the dashboard.</p>
+      </div>
+
+      <div class="scard">
+        <div class="scard-title">Excluded list</div>
+        <p class="scard-desc">Updates are still checked and reported — exclusion only blocks the update action itself.</p>
+
+        <div class="cred-list" id="excl-list">
+          <div class="excl-empty">Loading…</div>
+        </div>
+
+        <div class="scard-divider"></div>
+
+        <div class="add-excl-block">
+          <div class="add-excl-title">Add container by name</div>
+          <div class="add-excl-row">
+            <input type="text" id="excl-name-input" placeholder="e.g. cloudflared" autocomplete="off" spellcheck="false"
+                   onkeydown="if(event.key==='Enter') addExcluded()">
+            <button class="btn btn-primary btn-sm" onclick="addExcluded()">+ Add</button>
+          </div>
+          <p class="form-hint" style="margin-top:10px">Use the exact container name as shown on the dashboard.</p>
+        </div>
+      </div>
+
+      <div class="info-box">
+        🚫 Excluded containers still appear on the dashboard and checks still run against them — they just cannot be updated through Dockpatch until removed from this list.
+      </div>
+    </section>
+
     <!-- ══ DISPLAY ══ -->
     <section class="settings-panel" id="panel-display">
       <div class="panel-header">
@@ -547,13 +609,15 @@ function switchPanel(btn) {
   document.querySelectorAll('.settings-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   history.replaceState(null,'','#'+id);
-  if (id==='auth') loadCredsList();
+  if (id==='auth')     loadCredsList();
+  if (id==='excluded') loadExclList();
 }
 function restorePanelFromHash() {
   const hash = location.hash.replace('#','');
   if (hash) { const btn = document.querySelector(`.settings-sidebar .sidebar-link[data-panel="${CSS.escape(hash)}"]`); if (btn) switchPanel(btn); }
 }
 
+/* ── automation ── */
 async function loadSettings() {
   try {
     const r = await fetch('/api/settings'), d = await r.json();
@@ -584,6 +648,7 @@ async function saveSettings() {
   finally { btn.disabled=false; btn.textContent='Save changes'; }
 }
 
+/* ── display ── */
 function loadDisplaySettings() {
   const s = localStorage.getItem(COLS_KEY);
   document.getElementById('cfg-cols').value = (s && parseInt(s)>=1) ? parseInt(s) : '';
@@ -594,6 +659,7 @@ function saveDisplay() {
   toast('Display settings saved ✓','success');
 }
 
+/* ── credentials ── */
 async function loadCredsList() {
   const list = document.getElementById('creds-list');
   try {
@@ -639,8 +705,48 @@ async function removeCredential(registry, btn) {
   } catch(e) { toast('Failed to remove','error'); btn.disabled=false; }
 }
 
+/* ── excluded ── */
+async function loadExclList() {
+  const list = document.getElementById('excl-list');
+  try {
+    const r = await fetch('/api/excluded'), d = await r.json();
+    const names = d.excluded || [];
+    const has = names.length > 0;
+    document.getElementById('excluded-dot').style.display        = has ? 'block' : 'none';
+    document.getElementById('drawer-excluded-dot').style.display = has ? 'block' : 'none';
+    if (!names.length) { list.innerHTML = '<div class="excl-empty">No containers excluded yet.</div>'; return; }
+    list.innerHTML = names.map(name => `
+      <div class="excl-item">
+        <div class="excl-icon-wrap">🚫</div>
+        <div class="excl-name">${escHtml(name)}</div>
+        <button class="btn btn-ghost btn-sm" onclick="removeExcluded('${escAttr(name)}', this)">Remove</button>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = '<div class="excl-empty" style="color:var(--red)">Failed to load.</div>'; }
+}
+async function addExcluded() {
+  const name = document.getElementById('excl-name-input').value.trim();
+  if (!name) { toast('Enter a container name','error'); return; }
+  try {
+    const r = await fetch(`/api/excluded/${encodeURIComponent(name)}`, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('excl-name-input').value = '';
+      toast(`${name} excluded from updates ✓`, 'success');
+      loadExclList();
+    } else { toast('Failed to add','error'); }
+  } catch(e) { toast('Network error','error'); }
+}
+async function removeExcluded(name, btn) {
+  btn.disabled = true;
+  try {
+    await fetch(`/api/excluded/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    toast(`${name} removed from exclusion list`, 'info');
+    loadExclList();
+  } catch(e) { toast('Failed to remove','error'); btn.disabled = false; }
+}
+
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
-loadSettings(); loadDisplaySettings(); loadCredsList(); restorePanelFromHash();
+loadSettings(); loadDisplaySettings(); loadCredsList(); loadExclList(); restorePanelFromHash();
 </script>
 </body>
 </html>
