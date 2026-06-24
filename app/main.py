@@ -52,7 +52,6 @@ DEFAULT_SETTINGS = {
     "update_interval_hours": 0,
     "check_on_startup":      True,
     "update_window_start":   "",
-    "update_window_end":     "",
 }
 
 def load_settings() -> dict:
@@ -427,24 +426,20 @@ def do_update_async(name: str):
 scheduler_lock = threading.Lock()
 
 def _within_update_window() -> bool:
-    """Return True if the current server time is inside the configured maintenance window.
-    If no window is set, always returns True (updates allowed any time)."""
+    """Return True if the current server time is at or after the configured
+    maintenance window start time. If no start time is set, always returns
+    True (updates allowed at any time)."""
     s = load_settings()
     start_str = (s.get("update_window_start") or "").strip()
-    end_str   = (s.get("update_window_end")   or "").strip()
-    if not start_str or not end_str:
+    if not start_str:
         return True
     try:
-        h, m   = start_str.split(":")
+        h, m = start_str.split(":")
         t_start = datetime.time(int(h), int(m))
-        h, m   = end_str.split(":")
-        t_end   = datetime.time(int(h), int(m))
     except Exception:
         return True  # malformed config — don't block updates
     now = datetime.datetime.now().time()
-    if t_start <= t_end:
-        return t_start <= now <= t_end       # same-day window, e.g. 02:00 – 06:00
-    return now >= t_start or now <= t_end    # overnight window, e.g. 23:00 – 05:00
+    return now >= t_start
 
 def rebuild_schedule():
     with scheduler_lock:
@@ -458,7 +453,7 @@ def rebuild_schedule():
         if ui and ui > 0:
             def auto_update_all():
                 if not _within_update_window():
-                    log.info("Auto-update skipped: outside maintenance window")
+                    log.info("Auto-update skipped: before maintenance window start time")
                     return
                 for name, info in list(container_cache.items()):
                     if info.get("update_status") == "update_available" and name != SELF_NAME:
@@ -551,7 +546,6 @@ def api_settings_post():
         "update_interval_hours": _int(data.get("update_interval_hours"), 0),
         "check_on_startup":      bool(data.get("check_on_startup", True)),
         "update_window_start":   _time(data.get("update_window_start")),
-        "update_window_end":     _time(data.get("update_window_end")),
     }
     save_settings(s)
     rebuild_schedule()
