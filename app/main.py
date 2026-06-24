@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.5.0"
+VERSION = "0.6.0"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
@@ -58,6 +58,7 @@ DEFAULT_SETTINGS = {
     "check_on_startup":      True,
     "update_window_start":   "",
     "update_window_end":     "",
+    "excluded_containers":   [],
 }
 
 def load_settings() -> dict:
@@ -85,6 +86,17 @@ def save_settings(s: dict):
         except OSError:
             pass
         raise
+
+def get_excluded() -> list[str]:
+    return load_settings().get("excluded_containers", [])
+
+def set_excluded(names: list[str]):
+    s = load_settings()
+    s["excluded_containers"] = sorted(set(names))
+    save_settings(s)
+
+def is_excluded(name: str) -> bool:
+    return name in get_excluded()
 
 # ── update history ────────────────────────────────────────────────────────────
 def load_history() -> dict:
@@ -261,8 +273,9 @@ def snapshot_containers() -> list[dict]:
         log.error("Failed to list containers: %s", e)
         return []
 
-    history = load_history()
-    result = []
+    history  = load_history()
+    excluded = get_excluded()
+    result   = []
     with cache_lock:
         for c in containers:
             name = c.name.lstrip("/")
@@ -288,6 +301,7 @@ def snapshot_containers() -> list[dict]:
                 "status":            c.status,
                 "started_at":        started_at,
                 "is_self":           name == SELF_NAME,
+                "is_excluded":       name in excluded,
                 "update_status":     update_status,
                 "update_reason":     reason,
                 "last_updated":      hist.get("last_updated", ""),
@@ -369,6 +383,9 @@ def _do_update(name: str) -> tuple[bool, str]:
     """Pull and recreate a container, preserving its full config."""
     if name == SELF_NAME:
         return False, "Cannot update self"
+
+    if is_excluded(name):
+        return False, f"{name!r} is excluded from updates"
 
     with cache_lock:
         updating_set.add(name)
@@ -527,8 +544,14 @@ def rebuild_schedule():
                 if not _within_update_window():
                     log.info("Auto-update skipped: outside maintenance window")
                     return
+                excluded = get_excluded()
                 for name, info in list(container_cache.items()):
-                    if info.get("update_status") == "update_available" and name != SELF_NAME:
+                    if name == SELF_NAME:
+                        continue
+                    if name in excluded:
+                        log.info("Auto-update skipped for %r: excluded", name)
+                        continue
+                    if info.get("update_status") == "update_available":
                         threading.Thread(target=_do_update, args=(name,), daemon=True).start()
             schedule.every(ui).hours.do(auto_update_all)
             log.info("Scheduled auto-update every %d hr", ui)
@@ -586,13 +609,18 @@ def api_check_one(name):
 
 @app.route("/api/update/all", methods=["POST"])
 def api_update_all():
-    """Concurrently kick off updates for all containers with available updates."""
-    started = []
-    skipped = []
+    """Concurrently kick off updates for all containers with available updates,
+    skipping excluded containers."""
+    excluded = get_excluded()
+    started  = []
+    skipped  = []
     with cache_lock:
         names = list(container_cache.keys())
     for name in names:
         if name == SELF_NAME:
+            skipped.append(name)
+            continue
+        if name in excluded:
             skipped.append(name)
             continue
         with cache_lock:
@@ -606,6 +634,8 @@ def api_update_all():
 def api_update(name):
     if name == SELF_NAME:
         return jsonify({"ok": False, "error": "Cannot update self"})
+    if is_excluded(name):
+        return jsonify({"ok": False, "error": f"{name!r} is excluded from updates"})
     do_update_async(name)
     return jsonify({"ok": True})
 
@@ -656,17 +686,43 @@ def api_settings_post():
         except Exception:
             return ""
 
-    s = {
+    s = load_settings()
+    s.update({
         "check_interval_hours":  _int(data.get("check_interval_hours"),  0),
         "update_interval_hours": _int(data.get("update_interval_hours"), 0),
         "check_on_startup":      bool(data.get("check_on_startup", True)),
         "update_window_start":   _time(data.get("update_window_start")),
         "update_window_end":     _time(data.get("update_window_end")),
-    }
+        # excluded_containers is managed separately — don't overwrite here
+    })
     save_settings(s)
     rebuild_schedule()
     return jsonify({"ok": True})
 
+# ── exclusion API ─────────────────────────────────────────────────────────────
+@app.route("/api/excluded", methods=["GET"])
+def api_excluded_get():
+    return jsonify({"excluded": get_excluded()})
+
+@app.route("/api/excluded/<name>", methods=["POST"])
+def api_excluded_add(name):
+    excluded = get_excluded()
+    if name not in excluded:
+        excluded.append(name)
+        set_excluded(excluded)
+        log.info("Container %r added to exclusion list", name)
+    return jsonify({"ok": True, "excluded": get_excluded()})
+
+@app.route("/api/excluded/<name>", methods=["DELETE"])
+def api_excluded_remove(name):
+    excluded = get_excluded()
+    if name in excluded:
+        excluded.remove(name)
+        set_excluded(excluded)
+        log.info("Container %r removed from exclusion list", name)
+    return jsonify({"ok": True, "excluded": get_excluded()})
+
+# ── credentials API ───────────────────────────────────────────────────────────
 @app.route("/api/credentials", methods=["GET"])
 def api_credentials_get():
     creds = load_credentials()
