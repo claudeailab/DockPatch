@@ -137,6 +137,8 @@
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
     .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); filter: none; }
+    .btn-danger  { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef444480; }
+    .btn-danger:hover:not(:disabled) { background: #991b1b; border-color: var(--red); filter: none; }
     .btn-settings { background: #1e2a3a; color: var(--text); border: 1px solid #3b82f680; }
     .btn-settings:hover:not(:disabled) { background: #243448; border-color: var(--accent); filter: none; }
     .btn-success {
@@ -209,6 +211,17 @@
       white-space: nowrap;
     }
 
+    /* ── last-updated row ── */
+    .card-meta {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-meta .meta-ok   { color: var(--green); }
+    .card-meta .meta-fail { color: var(--red); }
+
     .card-bottom {
       display: flex;
       align-items: center;
@@ -254,7 +267,7 @@
       100% { transform: translateX(370%); }
     }
 
-    /* ── modal backdrop ── */
+    /* ── confirm modal ── */
     .modal-backdrop {
       display: none;
       position: fixed; inset: 0;
@@ -318,6 +331,13 @@
       width: 100%;
     }
     .form-group input[type="time"] { color-scheme: dark; width: auto; }
+    .form-row-time {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .form-row-time span { color: var(--muted); font-size: 12px; flex-shrink: 0; }
 
     /* ── credential list ── */
     .cred-item {
@@ -333,6 +353,11 @@
     .cred-registry { font-weight: 600; color: var(--text); }
     .cred-user { color: var(--muted); margin-top: 1px; }
     .cred-empty { color: var(--muted); font-size: 12px; padding: 4px 0; }
+    .cred-warning {
+      font-size: 11px; color: #fbbf24;
+      background: #78350f20; border: 1px solid #92400e;
+      border-radius: var(--radius); padding: 7px 10px;
+    }
 
     .toggle-row  { display: flex; align-items: center; gap: 10px; }
     .toggle-label { font-size: 13px; color: var(--text); }
@@ -365,6 +390,10 @@
       font-size: 13px;
       color: var(--muted);
     }
+
+    /* ── confirm dialog ── */
+    .confirm-msg { font-size: 14px; color: var(--text); line-height: 1.5; }
+    .confirm-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
     /* ── toast ── */
     #toast-container {
@@ -452,7 +481,7 @@
     </div>
     <div class="toolbar-actions">
       <button class="btn btn-check btn-sm" id="check-all-btn" onclick="checkAll(this)">Check all</button>
-      <button class="btn btn-success btn-sm" id="update-all-btn" onclick="updateAll(this)" disabled>Update all</button>
+      <button class="btn btn-success btn-sm" id="update-all-btn" onclick="confirmUpdateAll()" disabled>Update all</button>
     </div>
   </div>
 
@@ -481,8 +510,12 @@
       </div>
       <div class="form-group">
         <label class="form-label">Maintenance window</label>
-        <input type="time" id="cfg-window-start">
-        <span class="form-hint">Time that auto-updates start. Leave blank to allow updates at any time. Uses server time (TZ env var).</span>
+        <div class="form-row-time">
+          <input type="time" id="cfg-window-start" placeholder="Start">
+          <span>to</span>
+          <input type="time" id="cfg-window-end" placeholder="End">
+        </div>
+        <span class="form-hint">Auto-updates only run within this time window. Leave both blank to allow updates at any time. Supports overnight ranges (e.g. 22:00–04:00). Uses server time (TZ env var).</span>
       </div>
       <div class="form-group">
         <label class="form-label">Startup behaviour</label>
@@ -518,6 +551,7 @@
     </div>
     <div class="modal-body">
       <p class="form-hint">Add credentials to check and pull updates from private registries. For GitHub Container Registry use your GitHub username and a Personal Access Token with <strong>read:packages</strong> scope.</p>
+      <div class="cred-warning">⚠️ Credentials are stored in plain text on disk. Ensure your <code>/data</code> volume is appropriately secured.</div>
       <div id="creds-list" style="margin-top:12px"></div>
       <div class="form-group" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
         <label class="form-label">Add Registry</label>
@@ -533,6 +567,24 @@
   </div>
 </div>
 
+<!-- ── confirm update-all modal ── -->
+<div class="modal-backdrop" id="confirm-modal" onclick="confirmBackdropClose(event)">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">⬆️ Update all containers?</span>
+      <button class="modal-close" onclick="closeConfirm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="confirm-msg">This will pull the latest image and recreate <strong id="confirm-count">—</strong> container(s).</p>
+      <p class="confirm-sub">Each container will be stopped, removed, and restarted with its existing configuration. This cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger btn-sm" onclick="doUpdateAll()">Yes, update all</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script>
@@ -540,6 +592,19 @@ let containers = [];
 let wasChecking = false;
 let pollInFlight = false;
 let isScanning = false;
+
+// ── adaptive polling ──
+// Poll faster while something is happening, slower when idle.
+let pollInterval = 4000;
+let pollTimer = null;
+
+function schedulePoll() {
+  if (pollTimer) clearTimeout(pollTimer);
+  pollTimer = setTimeout(async () => {
+    await poll();
+    schedulePoll();
+  }, pollInterval);
+}
 
 // ── stat counter animation ──
 const statDisplayed = {};
@@ -586,6 +651,21 @@ function escHtml(s) {
 }
 const escAttr = escHtml;
 
+function formatRelativeTime(isoStr) {
+  if (!isoStr) return '';
+  const date = new Date(isoStr);
+  if (isNaN(date)) return '';
+  const diffMs  = Date.now() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60)  return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60)  return `${diffMin}m ago`;
+  const diffHr  = Math.floor(diffMin / 60);
+  if (diffHr < 24)   return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
 // ── grid columns ──
 const COLS_KEY = 'dockpatch_cols';
 
@@ -613,7 +693,7 @@ function applyResponsiveCols() {
 window.addEventListener('resize', applyResponsiveCols);
 applyColumns();
 
-// ── modal ──
+// ── settings modal ──
 function openSettings() {
   loadSettings();
   const saved = localStorage.getItem(COLS_KEY);
@@ -634,6 +714,7 @@ async function loadSettings() {
   document.getElementById('cfg-update').value       = d.update_interval_hours ?? 0;
   document.getElementById('cfg-startup').checked    = !!d.check_on_startup;
   document.getElementById('cfg-window-start').value = d.update_window_start   ?? '';
+  document.getElementById('cfg-window-end').value   = d.update_window_end     ?? '';
 }
 
 async function saveSettings() {
@@ -654,6 +735,7 @@ async function saveSettings() {
     update_interval_hours: updateRaw !== '' ? parseInt(updateRaw, 10) : 0,
     check_on_startup:      document.getElementById('cfg-startup').checked,
     update_window_start:   document.getElementById('cfg-window-start').value,
+    update_window_end:     document.getElementById('cfg-window-end').value,
   };
   const r = await fetch('/api/settings', {
     method: 'POST',
@@ -685,9 +767,12 @@ async function poll() {
     wasChecking = isScanning;
 
     const hasUpdates = containers.some(c => c.update_status === 'update_available' && !c.is_self);
-    const busyAll    = isScanning || containers.some(c => c.update_status === 'updating');
+    const busyAny    = isScanning || containers.some(c => c.update_status === 'updating' || c.update_status === 'checking');
     document.getElementById('check-all-btn').disabled  = isScanning;
-    document.getElementById('update-all-btn').disabled = !hasUpdates || busyAll;
+    document.getElementById('update-all-btn').disabled = !hasUpdates || busyAny;
+
+    // Adaptive polling: fast when busy, slow when idle
+    pollInterval = busyAny ? 1500 : 5000;
 
     updateStats(isScanning);
   } finally {
@@ -761,6 +846,19 @@ function renderGrid() {
       }
     }
 
+    // Last-updated metadata row
+    let metaHtml = '';
+    if (c.last_updated) {
+      const rel   = formatRelativeTime(c.last_updated);
+      const okStr = c.last_update_ok === true
+        ? '<span class="meta-ok">✓</span>'
+        : c.last_update_ok === false
+          ? '<span class="meta-fail">✕ failed</span>'
+          : '';
+      const imgStr = c.last_update_image ? ` · <span title="${escAttr(c.last_update_image)}">${escHtml(c.last_update_image.split('/').pop())}</span>` : '';
+      metaHtml = `<div class="card-meta">${okStr} Updated ${escHtml(rel)}${imgStr}</div>`;
+    }
+
     const showProgress = c.update_status === 'checking' || c.update_status === 'updating';
     return `<div class="${cardClass}">
       <div class="card-top">
@@ -768,6 +866,7 @@ function renderGrid() {
         <div class="card-state">${statusBadge}</div>
       </div>
       <div class="card-image">${escHtml(c.image)}</div>
+      ${metaHtml}
       ${showProgress ? '<div class="card-progress"><div class="card-progress-bar"></div></div>' : ''}
       <div class="card-bottom">
         ${updateBadge}
@@ -778,11 +877,28 @@ function renderGrid() {
 }
 
 function updateStats(scanning) {
+  const unknown = containers.filter(c =>
+    c.update_status === 'unknown'
+  ).length;
+  const errors  = containers.filter(c => c.update_status === 'error').length;
+  const custom  = containers.filter(c => c.update_status === 'custom').length;
+
   animateStat('s-total',   containers.length);
   animateStat('s-updates', containers.filter(c => c.update_status === 'update_available').length);
   animateStat('s-uptodate',containers.filter(c => c.update_status === 'up_to_date').length);
-  animateStat('s-unknown', containers.filter(c => c.update_status === 'unknown' || c.update_status === 'error' || c.update_status === 'custom').length);
-  document.getElementById('s-unknown-label').textContent = scanning ? 'Checking…' : 'Not checked';
+  animateStat('s-unknown', unknown + errors + custom);
+
+  let unknownLabel;
+  if (scanning) {
+    unknownLabel = 'Checking…';
+  } else if (errors > 0 && unknown === 0 && custom === 0) {
+    unknownLabel = 'Errors';
+  } else if (errors === 0 && unknown === 0 && custom > 0) {
+    unknownLabel = 'Custom images';
+  } else {
+    unknownLabel = 'Not checked / other';
+  }
+  document.getElementById('s-unknown-label').textContent = unknownLabel;
   renderGrid();
 }
 
@@ -793,12 +909,24 @@ async function checkAll(btn) {
   poll();
 }
 
-async function updateAll(btn) {
-  btn.disabled = true;
-  const toUpdate = containers.filter(c => c.update_status === 'update_available' && !c.is_self);
-  for (const c of toUpdate) {
-    await fetch(`/api/update/${encodeURIComponent(c.name)}`, { method: 'POST' });
-  }
+// ── confirm update-all dialog ──
+function confirmUpdateAll() {
+  const count = containers.filter(c => c.update_status === 'update_available' && !c.is_self).length;
+  document.getElementById('confirm-count').textContent = count;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm() {
+  document.getElementById('confirm-modal').classList.remove('open');
+}
+function confirmBackdropClose(e) {
+  if (e.target === document.getElementById('confirm-modal')) closeConfirm();
+}
+
+async function doUpdateAll() {
+  closeConfirm();
+  document.getElementById('update-all-btn').disabled = true;
+  // Use the dedicated /api/update/all endpoint for efficiency
+  await fetch('/api/update/all', { method: 'POST' });
   poll();
 }
 
@@ -876,11 +1004,11 @@ async function removeCredential(registry) {
   loadCredsList();
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSettings(); closeCredentials(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSettings(); closeCredentials(); closeConfirm(); } });
 
 applyColumns();
 poll();
-setInterval(poll, 4000);
+schedulePoll();
 </script>
 </body>
 </html>
