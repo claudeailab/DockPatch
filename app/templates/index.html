@@ -9,33 +9,44 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:      #0f1117;
-      --surface: #1a1d27;
-      --surface2:#1e2130;
-      --border:  #2a2d3a;
-      --accent:  #3b82f6;
-      --green:   #22c55e;
-      --yellow:  #f59e0b;
-      --red:     #ef4444;
-      --muted:   #6b7280;
-      --text:    #e2e8f0;
-      --radius:  8px;
+      --bg:        #080a0f;
+      --surface:   #0e1118;
+      --surface2:  #141720;
+      --surface3:  #1a1e2a;
+      --border:    #1e2235;
+      --border2:   #262b3d;
+      --accent:    #4f7eff;
+      --accent2:   #6b95ff;
+      --green:     #22d06a;
+      --yellow:    #f5a623;
+      --red:       #ff5151;
+      --purple:    #a78bfa;
+      --muted:     #5a6282;
+      --muted2:    #7b84a3;
+      --text:      #dde3f5;
+      --text2:     #a8b0cc;
+      --radius:    10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
     }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: system-ui, -apple-system, sans-serif;
-      font-size: 14px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 13.5px;
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── header ── */
+    /* ── header ───────────────────────────────── */
     header {
-      background: var(--surface);
+      background: rgba(8,10,15,0.82);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
       border-bottom: 1px solid var(--border);
-      padding: 0 16px;
-      height: 50px;
+      padding: 0 20px;
+      height: 54px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -43,367 +54,415 @@
       top: 0;
       z-index: 100;
     }
-    .logo {
-      font-size: 16px; font-weight: 700;
-      display: flex; align-items: center; gap: 8px;
-      text-decoration: none; color: var(--text);
-    }
-    .logo:hover { color: var(--text); }
 
-    .header-right { display: flex; align-items: center; gap: 8px; }
+    .logo {
+      font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; gap: 9px;
+      text-decoration: none; color: var(--text);
+      letter-spacing: -.01em;
+    }
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f2040 100%);
+      border: 1px solid #2d5a8e;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      box-shadow: 0 0 12px #3b82f620;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 10px; }
 
     /* scanning pill */
     #scanning-pill {
-      display: none;
-      align-items: center;
-      gap: 6px;
-      background: #1e3a5f;
-      border: 1px solid #2d5a8e;
-      border-radius: 20px;
-      padding: 3px 10px 3px 7px;
-      font-size: 12px;
-      color: #93c5fd;
+      display: none; align-items: center; gap: 6px;
+      background: rgba(30,58,95,0.6);
+      border: 1px solid #2d5a8e80;
+      border-radius: 9999px;
+      padding: 4px 12px 4px 8px;
+      font-size: 12px; color: #93c5fd;
+      backdrop-filter: blur(8px);
     }
     #scanning-pill.visible { display: flex; }
     .pill-spinner {
-      width: 12px; height: 12px;
-      border: 2px solid #3b82f640;
-      border-top-color: #3b82f6;
+      width: 11px; height: 11px;
+      border: 1.5px solid #3b82f630;
+      border-top-color: #60a5fa;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin .75s linear infinite;
       flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* hamburger button */
+    /* hamburger */
     .hamburger {
-      background: none;
-      border: 1px solid var(--border);
+      background: var(--surface2);
+      border: 1px solid var(--border2);
       border-radius: var(--radius);
-      color: var(--muted);
+      color: var(--muted2);
       cursor: pointer;
       width: 34px; height: 34px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      padding: 0;
-      transition: background .15s, color .15s, border-color .15s;
-      flex-shrink: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 5px; padding: 0;
+      transition: background .15s, border-color .15s, color .15s;
     }
-    .hamburger:hover { background: var(--border); color: var(--text); border-color: #3a3d4a; }
+    .hamburger:hover { background: var(--surface3); border-color: var(--accent); color: var(--text); }
     .hamburger span {
-      display: block;
-      width: 16px; height: 2px;
-      background: currentColor;
-      border-radius: 2px;
-      transition: transform .2s, opacity .2s;
+      display: block; width: 15px; height: 1.5px;
+      background: currentColor; border-radius: 2px;
+      transition: transform .22s, opacity .22s;
     }
-    /* animate to × when open */
-    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
     .hamburger.open span:nth-child(2) { opacity: 0; }
-    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    .hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
 
     /* ── drawer backdrop ── */
     #drawer-backdrop {
-      display: none;
-      position: fixed; inset: 0;
-      background: #00000060;
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(2px);
       z-index: 200;
     }
     #drawer-backdrop.open { display: block; }
 
     /* ── drawer ── */
     #drawer {
-      position: fixed;
-      top: 0; left: 0;
-      width: 260px;
-      height: 100%;
-      background: var(--surface);
+      position: fixed; top: 0; left: 0;
+      width: 256px; height: 100%;
+      background: rgba(10,12,20,0.97);
+      backdrop-filter: blur(24px);
       border-right: 1px solid var(--border);
       z-index: 201;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       transform: translateX(-100%);
-      transition: transform .22s cubic-bezier(.4,0,.2,1);
+      transition: transform .24s cubic-bezier(.4,0,.2,1);
       overflow-y: auto;
     }
     #drawer.open { transform: translateX(0); }
 
     .drawer-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      height: 50px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; height: 54px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+      background: linear-gradient(180deg, rgba(79,126,255,.06) 0%, transparent 100%);
     }
     .drawer-logo {
-      font-size: 15px; font-weight: 700;
+      font-size: 14px; font-weight: 700;
       display: flex; align-items: center; gap: 8px;
       text-decoration: none; color: var(--text);
     }
     .drawer-close {
-      background: none; border: none; color: var(--muted);
-      font-size: 18px; cursor: pointer; line-height: 1;
-      padding: 4px 6px; border-radius: 4px;
+      background: var(--surface2); border: 1px solid var(--border2);
+      color: var(--muted2); font-size: 14px; cursor: pointer;
+      padding: 5px 7px; border-radius: 7px; line-height: 1;
+      transition: background .12s, color .12s;
     }
-    .drawer-close:hover { color: var(--text); background: var(--border); }
+    .drawer-close:hover { background: var(--surface3); color: var(--text); }
 
-    .drawer-section {
-      padding: 16px 10px 8px;
-    }
+    .drawer-section { padding: 16px 10px 6px; }
     .drawer-section-label {
-      font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .08em;
-      color: var(--muted);
-      padding: 0 8px 8px;
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: var(--muted); padding: 0 8px 8px;
     }
     .drawer-link {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 10px;
-      border-radius: var(--radius);
-      font-size: 13px; font-weight: 500;
-      color: var(--muted);
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 500; color: var(--muted2);
       text-decoration: none;
       transition: background .12s, color .12s;
       border: none; background: none; width: 100%; text-align: left; cursor: pointer;
     }
-    .drawer-link:hover { background: var(--surface2); color: var(--text); }
-    .drawer-link.active { background: #1e3a5f; color: #93c5fd; }
-    .drawer-link .d-icon { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+    .drawer-link:hover  { background: var(--surface2); color: var(--text); }
+    .drawer-link.active { background: rgba(79,126,255,.12); color: var(--accent2); }
+    .drawer-link .d-icon { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; opacity: .85; }
     .drawer-link .d-dot {
-      margin-left: auto;
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--yellow);
-      flex-shrink: 0;
+      margin-left: auto; width: 6px; height: 6px;
+      border-radius: 50%; background: var(--yellow); flex-shrink: 0;
     }
-    .drawer-divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 6px 10px;
-    }
-
+    .drawer-divider { border: none; border-top: 1px solid var(--border); margin: 6px 10px; }
     .drawer-footer {
-      margin-top: auto;
-      padding: 12px 16px;
+      margin-top: auto; padding: 12px 16px;
       border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
     }
     .drawer-version { font-size: 11px; color: var(--muted); }
     .drawer-github { color: var(--muted); display: flex; align-items: center; transition: color .15s; }
     .drawer-github:hover { color: var(--text); }
 
     /* ── main ── */
-    main { padding: 14px 20px; max-width: 1600px; margin: 0 auto; }
+    main { padding: 20px 22px; max-width: 1600px; margin: 0 auto; }
 
-    /* ── summary ── */
-    .summary { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    /* ── summary stats ── */
+    .summary { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
     .stat {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 8px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
-      min-width: 110px;
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+      display: flex; align-items: center; gap: 14px;
+      flex: 1; min-width: 120px;
+      position: relative; overflow: hidden;
+      transition: border-color .2s, transform .2s;
     }
-    .stat-icon { font-size: 18px; }
-    .stat-val  { font-size: 22px; font-weight: 700; line-height: 1; }
-    .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .stat.c-updates  { border-color: #92400e; }
-    .stat.c-uptodate { border-color: #166534; }
-    .stat.c-unknown  { border-color: #374151; }
+    .stat::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    .stat:hover { transform: translateY(-1px); }
+    .stat.c-total::before   { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .stat.c-updates::before { background: linear-gradient(90deg, #b45309, var(--yellow)); }
+    .stat.c-uptodate::before{ background: linear-gradient(90deg, #15803d, var(--green)); }
+    .stat.c-unknown::before { background: linear-gradient(90deg, #374151, #6b7280); }
+    .stat.c-updates  { border-color: #92400e50; }
+    .stat.c-uptodate { border-color: #16653450; }
+
+    .stat-icon-wrap {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0;
+    }
+    .stat.c-total   .stat-icon-wrap { background: rgba(79,126,255,.12); }
+    .stat.c-updates .stat-icon-wrap { background: rgba(245,166,35,.1); }
+    .stat.c-uptodate .stat-icon-wrap{ background: rgba(34,208,106,.1); }
+    .stat.c-unknown .stat-icon-wrap { background: rgba(107,114,128,.1); }
+
+    .stat-val   { font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -.02em; font-feature-settings: 'tnum'; }
+    .stat-label { font-size: 11px; color: var(--muted2); margin-top: 3px; font-weight: 500; }
 
     /* ── toolbar ── */
-    .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-    .toolbar-search { position: relative; width: 220px; flex-shrink: 0; }
-    .toolbar-search input[type="text"] {
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .toolbar-search { position: relative; flex: 1; max-width: 280px; }
+    .toolbar-search svg {
+      position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); pointer-events: none;
+    }
+    .toolbar-search input {
       width: 100%;
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      border-radius: 9999px;
       color: var(--text);
-      padding: 6px 10px;
-      font-size: 13px;
-      outline: none;
+      padding: 7px 12px 7px 34px;
+      font-size: 13px; outline: none;
+      transition: border-color .15s, box-shadow .15s;
     }
-    .toolbar-search input[type="text"]:focus { border-color: var(--accent); }
+    .toolbar-search input::placeholder { color: var(--muted); }
+    .toolbar-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,126,255,.15); }
     .toolbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
     /* ── buttons ── */
     .btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 6px 12px; border-radius: var(--radius); border: none;
-      cursor: pointer; font-size: 13px; font-weight: 500;
-      transition: opacity .15s, filter .15s; white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 16px; border-radius: 9999px; border: none;
+      cursor: pointer; font-size: 12.5px; font-weight: 600;
+      transition: transform .12s, box-shadow .12s, filter .12s, opacity .12s;
+      white-space: nowrap; letter-spacing: .01em;
     }
-    .btn:hover:not(:disabled) { filter: brightness(1.15); }
-    .btn:disabled { opacity: .4; cursor: default; }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-    .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); filter: none; }
-    .btn-danger  { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef444480; }
-    .btn-danger:hover:not(:disabled) { background: #991b1b; border-color: var(--red); filter: none; }
-    .btn-success {
-      background: #16803c; color: #fff;
-      border: 1px solid #4ade80;
-      box-shadow: 0 0 8px #22c55e40;
-      font-weight: 600;
-    }
-    .btn-success:hover:not(:disabled) { background: #22c55e; border-color: #86efac; filter: none; }
-    .btn-check  {
-      background: #2563eb; color: #fff;
-      border: 1px solid #60a5fa;
-      box-shadow: 0 0 8px #3b82f640;
-      font-weight: 600;
-    }
-    .btn-check:hover:not(:disabled) { background: #3b82f6; border-color: #93c5fd; filter: none; }
-    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:active:not(:disabled){ transform: translateY(0); }
+    .btn:disabled { opacity: .35; cursor: default; }
 
-    /* ── container grid ── */
-    .grid { display: grid; gap: 10px; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #3a6ae8);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(79,126,255,.35);
+    }
+    .btn-primary:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(79,126,255,.5); }
+
+    .btn-ghost {
+      background: var(--surface2); color: var(--muted2);
+      border: 1px solid var(--border2);
+    }
+    .btn-ghost:hover:not(:disabled) { background: var(--surface3); color: var(--text); border-color: var(--border2); }
+
+    .btn-danger {
+      background: rgba(127,29,29,.7); color: #fca5a5;
+      border: 1px solid rgba(239,68,68,.3);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(153,27,27,.8); box-shadow: 0 4px 16px rgba(239,68,68,.25); }
+
+    .btn-success {
+      background: linear-gradient(135deg, #15803d, #166534);
+      color: #fff; border: 1px solid #22c55e50;
+      box-shadow: 0 2px 12px rgba(34,208,106,.25);
+    }
+    .btn-success:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(34,208,106,.4); }
+
+    .btn-check {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff; border: 1px solid #60a5fa40;
+      box-shadow: 0 2px 12px rgba(59,130,246,.3);
+    }
+    .btn-check:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(59,130,246,.45); }
+    .btn-sm { padding: 5px 13px; font-size: 12px; }
+
+    /* ── grid ── */
+    .grid { display: grid; gap: 12px; }
 
     /* ── container card ── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      display: flex; flex-direction: column; gap: 8px;
-      transition: border-color .15s;
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: border-color .2s, transform .2s, box-shadow .2s;
+      position: relative; overflow: hidden;
     }
-    .card:hover { border-color: #3a3d4a; }
-    .card.has-update  { border-left: 3px solid var(--yellow); }
-    .card.is-checking { border-left: 3px solid var(--accent); }
-    .card.is-updating { border-left: 3px solid #7c3aed; }
-    .card.is-custom   { border-left: 3px solid #8b5cf6; }
-    .card.is-error    { border-left: 3px solid #4b1c1c; }
-    .card.is-self     { border-left: 3px solid #312e81; }
+    .card::after {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.04), transparent);
+    }
+    .card:hover {
+      border-color: var(--border2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.35);
+    }
 
-    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    /* coloured top strip per state */
+    .card.has-update  { border-top: 2px solid var(--yellow); }
+    .card.is-checking { border-top: 2px solid var(--accent); }
+    .card.is-updating { border-top: 2px solid var(--purple); }
+    .card.is-custom   { border-top: 2px solid #8b5cf6; }
+    .card.is-error    { border-top: 2px solid var(--red); }
+    .card.is-self     { border-top: 2px solid #4f46e5; }
+
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
     .card-name {
-      font-weight: 700; font-size: 14px; word-break: break-all;
+      font-weight: 700; font-size: 13.5px; word-break: break-all;
       display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      color: var(--text);
     }
     .self-badge {
-      font-size: 10px; background: #312e81; color: #a5b4fc;
-      padding: 1px 5px; border-radius: 4px; font-weight: 600; flex-shrink: 0;
+      font-size: 9.5px; background: rgba(79,70,229,.3); color: #a5b4fc;
+      padding: 2px 6px; border-radius: 9999px; font-weight: 700;
+      border: 1px solid rgba(165,180,252,.2); flex-shrink: 0; letter-spacing: .04em;
     }
     .card-state { flex-shrink: 0; }
-    .card-image { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+    .card-image {
+      color: var(--muted2); font-size: 11px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
     .card-meta { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
     .card-meta .meta-ok   { color: var(--green); }
     .card-meta .meta-fail { color: var(--red); }
 
-    .card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px; }
-    .card-actions { display: flex; gap: 5px; }
-    .self-lock { color: var(--muted); font-size: 13px; }
+    .card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+    .card-actions { display: flex; gap: 6px; }
+    .self-lock { color: var(--muted); font-size: 12px; }
 
     /* ── badges ── */
     .badge {
       display: inline-flex; align-items: center; gap: 4px;
-      padding: 2px 8px; border-radius: 20px;
-      font-size: 11px; font-weight: 600; white-space: nowrap;
+      padding: 3px 9px; border-radius: 9999px;
+      font-size: 11px; font-weight: 600; white-space: nowrap; letter-spacing: .01em;
     }
-    .badge-running   { background: #14532d40; color: var(--green);  border: 1px solid #166534; }
-    .badge-exited    { background: #7f1d1d40; color: var(--red);    border: 1px solid #991b1b; }
-    .badge-paused    { background: #78350f40; color: var(--yellow); border: 1px solid #92400e; }
-    .badge-other     { background: #1e293b;   color: var(--muted);  border: 1px solid var(--border); }
-    .badge-uptodate  { background: #14532d40; color: var(--green);  border: 1px solid #166534; }
-    .badge-available { background: #78350f40; color: var(--yellow); border: 1px solid #92400e; }
-    .badge-unknown   { background: #1e293b;   color: var(--muted);  border: 1px solid var(--border); }
-    .badge-custom    { background: #5b21b640; color: #d8b4fe;       border: 1px solid #a78bfa; }
-    .badge-error     { background: #7f1d1d40; color: var(--red);    border: 1px solid #991b1b; }
-    .badge-checking  { background: #1e3a5f40; color: #93c5fd;       border: 1px solid #2d5a8e; animation: badge-pulse 1.4s ease-in-out infinite; }
-    .badge-updating  { background: #2e1065;   color: #c4b5fd;       border: 1px solid #7c3aed; animation: badge-pulse 1.4s ease-in-out infinite; }
-    @keyframes badge-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+    .badge-running   { background: rgba(34,208,106,.1);  color: var(--green);  border: 1px solid rgba(34,208,106,.25); }
+    .badge-exited    { background: rgba(255,81,81,.1);   color: var(--red);    border: 1px solid rgba(255,81,81,.25); }
+    .badge-paused    { background: rgba(245,166,35,.1);  color: var(--yellow); border: 1px solid rgba(245,166,35,.25); }
+    .badge-other     { background: var(--surface2);      color: var(--muted2); border: 1px solid var(--border); }
+    .badge-uptodate  { background: rgba(34,208,106,.1);  color: var(--green);  border: 1px solid rgba(34,208,106,.25); }
+    .badge-available { background: rgba(245,166,35,.12); color: var(--yellow); border: 1px solid rgba(245,166,35,.3); }
+    .badge-unknown   { background: var(--surface2);      color: var(--muted2); border: 1px solid var(--border); }
+    .badge-custom    { background: rgba(167,139,250,.1); color: var(--purple); border: 1px solid rgba(167,139,250,.25); }
+    .badge-error     { background: rgba(255,81,81,.1);   color: var(--red);    border: 1px solid rgba(255,81,81,.25); }
+    .badge-checking  { background: rgba(79,126,255,.1);  color: var(--accent2); border: 1px solid rgba(79,126,255,.25); animation: badge-pulse 1.5s ease-in-out infinite; }
+    .badge-updating  { background: rgba(167,139,250,.12);color: var(--purple); border: 1px solid rgba(167,139,250,.3); animation: badge-pulse 1.5s ease-in-out infinite; }
+    @keyframes badge-pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 
     /* ── card progress bar ── */
-    .card-progress { height: 3px; border-radius: 2px; background: var(--border); overflow: hidden; }
-    .card-progress-bar { height: 100%; width: 38%; border-radius: 2px; animation: progress-slide 1.3s ease-in-out infinite; }
-    .is-checking .card-progress-bar { background: var(--accent); }
-    .is-updating .card-progress-bar { background: #7c3aed; }
-    @keyframes progress-slide { 0% { transform: translateX(-160%); } 100% { transform: translateX(370%); } }
+    .card-progress { height: 2px; border-radius: 9999px; background: var(--border); overflow: hidden; }
+    .card-progress-bar { height: 100%; width: 35%; border-radius: 9999px; animation: progress-slide 1.4s ease-in-out infinite; }
+    .is-checking .card-progress-bar { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .is-updating .card-progress-bar { background: linear-gradient(90deg, #7c3aed, var(--purple)); }
+    @keyframes progress-slide { 0%{transform:translateX(-170%)} 100%{transform:translateX(400%)} }
 
     /* ── confirm modal ── */
     .modal-backdrop {
       display: none; position: fixed; inset: 0;
-      background: #00000088; z-index: 300;
-      align-items: center; justify-content: center; padding: 20px;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(4px);
+      z-index: 300; align-items: center; justify-content: center; padding: 20px;
     }
     .modal-backdrop.open { display: flex; }
     .modal {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 24px; width: 100%; max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-xl);
+      padding: 26px; width: 100%; max-width: 400px;
       display: flex; flex-direction: column; gap: 20px;
-      box-shadow: 0 24px 48px #00000066;
+      box-shadow: 0 32px 64px rgba(0,0,0,.6);
     }
     .modal-header { display: flex; align-items: center; justify-content: space-between; }
-    .modal-title  { font-size: 16px; font-weight: 700; }
+    .modal-title  { font-size: 15px; font-weight: 700; }
     .modal-close  {
-      background: none; border: none; color: var(--muted);
-      font-size: 20px; cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: 4px;
+      background: var(--surface2); border: 1px solid var(--border2); color: var(--muted2);
+      font-size: 13px; cursor: pointer; padding: 5px 8px; border-radius: 8px; line-height: 1;
+      transition: background .12s, color .12s;
     }
-    .modal-close:hover { color: var(--text); background: var(--border); }
-    .modal-body  { display: flex; flex-direction: column; gap: 16px; }
+    .modal-close:hover { background: var(--surface3); color: var(--text); }
+    .modal-body  { display: flex; flex-direction: column; gap: 12px; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
-    .confirm-msg { font-size: 14px; color: var(--text); line-height: 1.5; }
-    .confirm-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .confirm-msg { font-size: 14px; color: var(--text); line-height: 1.6; }
+    .confirm-sub { font-size: 12px; color: var(--muted2); line-height: 1.5; }
 
     /* ── toast ── */
     #toast-container {
-      position: fixed; bottom: 20px; right: 20px;
+      position: fixed; bottom: 22px; right: 22px;
       display: flex; flex-direction: column; gap: 8px; z-index: 999;
     }
     .toast {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 9px 14px;
-      font-size: 13px; animation: slideIn .2s ease; max-width: 300px;
+      background: rgba(14,17,24,0.92);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-lg);
+      padding: 10px 16px;
+      font-size: 13px; animation: toastIn .2s cubic-bezier(.34,1.56,.64,1);
+      max-width: 300px; box-shadow: 0 8px 32px rgba(0,0,0,.4);
     }
     .toast.success { border-left: 3px solid var(--green); }
     .toast.error   { border-left: 3px solid var(--red); }
     .toast.info    { border-left: 3px solid var(--accent); }
-    @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes toastIn { from{opacity:0;transform:translateY(10px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }
 
     /* ── empty ── */
-    .empty { text-align: center; padding: 36px; color: var(--muted); grid-column: 1/-1; }
+    .empty { text-align: center; padding: 48px 24px; color: var(--muted); grid-column: 1/-1; font-size: 13px; }
+    .empty-icon { font-size: 32px; margin-bottom: 10px; opacity: .4; }
 
     @media (max-width: 640px) {
-      main { padding: 10px 12px; }
-      .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .stat { min-width: 0; padding: 7px 10px; flex: unset; }
-      .stat-val { font-size: 18px; }
-      .toolbar-search { width: 140px; }
+      main { padding: 12px 14px; }
+      .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .stat { min-width: 0; flex: unset; padding: 12px 14px; }
+      .stat-val { font-size: 22px; }
+      .toolbar-search { max-width: 160px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── drawer backdrop ── -->
+<!-- drawer backdrop -->
 <div id="drawer-backdrop" onclick="closeDrawer()"></div>
 
-<!-- ── drawer ── -->
+<!-- drawer -->
 <nav id="drawer" aria-label="Main navigation" aria-hidden="true">
   <div class="drawer-header">
-    <a href="/" class="drawer-logo"><span>🐳</span> Dockpatch</a>
+    <a href="/" class="drawer-logo">
+      <div class="logo-icon">🐳</div>
+      Dockpatch
+    </a>
     <button class="drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
   </div>
 
   <div class="drawer-section">
     <div class="drawer-section-label">Navigation</div>
     <a href="/" class="drawer-link active">
-      <span class="d-icon">📦</span> Dashboard
+      <span class="d-icon">▦</span> Dashboard
     </a>
   </div>
 
@@ -412,69 +471,63 @@
   <div class="drawer-section">
     <div class="drawer-section-label">Settings</div>
     <a href="/settings#automation" class="drawer-link">
-      <span class="d-icon">🔄</span> Automation
+      <span class="d-icon">⏱</span> Automation
     </a>
     <a href="/settings#auth" class="drawer-link">
       <span class="d-icon">🔑</span> Registry Auth
       <span class="d-dot" id="drawer-auth-dot" style="display:none"></span>
     </a>
     <a href="/settings#display" class="drawer-link">
-      <span class="d-icon">🖥</span> Display
+      <span class="d-icon">◻</span> Display
     </a>
     <a href="/settings#about" class="drawer-link">
-      <span class="d-icon">ℹ️</span> About
+      <span class="d-icon">ℹ</span> About
     </a>
   </div>
 
   <div class="drawer-footer">
     <span class="drawer-version">v{{ version }}</span>
-    <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener"
-       class="drawer-github" title="View on GitHub">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
-          0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
-          -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
-          .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
-          -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09
-          2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82
-          2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01
-          2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-      </svg>
+    <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener" class="drawer-github" title="GitHub">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
     </a>
   </div>
 </nav>
 
-<!-- ── header ── -->
+<!-- header -->
 <header>
-  <a href="/" class="logo"><span>🐳</span> Dockpatch</a>
+  <a href="/" class="logo">
+    <div class="logo-icon">🐳</div>
+    Dockpatch
+  </a>
   <div class="header-right">
     <div id="scanning-pill">
       <div class="pill-spinner"></div>
       <span>Scanning…</span>
     </div>
-    <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+    <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()"
+            aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
       <span></span><span></span><span></span>
     </button>
   </div>
 </header>
 
 <main>
-  <!-- summary cards -->
+  <!-- stats -->
   <div class="summary">
-    <div class="stat">
-      <span class="stat-icon">📦</span>
-      <div><div class="stat-val" id="s-total">—</div><div class="stat-label">Total</div></div>
+    <div class="stat c-total">
+      <div class="stat-icon-wrap">📦</div>
+      <div><div class="stat-val" id="s-total">—</div><div class="stat-label">Total containers</div></div>
     </div>
     <div class="stat c-updates">
-      <span class="stat-icon">⬆️</span>
+      <div class="stat-icon-wrap">⬆️</div>
       <div><div class="stat-val" id="s-updates">—</div><div class="stat-label">Updates available</div></div>
     </div>
     <div class="stat c-uptodate">
-      <span class="stat-icon">✅</span>
+      <div class="stat-icon-wrap">✅</div>
       <div><div class="stat-val" id="s-uptodate">—</div><div class="stat-label">Up to date</div></div>
     </div>
     <div class="stat c-unknown">
-      <span class="stat-icon">❓</span>
+      <div class="stat-icon-wrap">❓</div>
       <div><div class="stat-val" id="s-unknown">—</div><div class="stat-label" id="s-unknown-label">Not checked</div></div>
     </div>
   </div>
@@ -482,11 +535,12 @@
   <!-- toolbar -->
   <div class="toolbar">
     <div class="toolbar-search">
-      <input type="text" id="search" placeholder="🔍 Filter containers…" oninput="renderGrid()">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/></svg>
+      <input type="text" id="search" placeholder="Filter containers…" oninput="renderGrid()">
     </div>
     <div class="toolbar-actions">
-      <button class="btn btn-check btn-sm" id="check-all-btn" onclick="checkAll(this)">Check all</button>
-      <button class="btn btn-success btn-sm" id="update-all-btn" onclick="confirmUpdateAll()" disabled>Update all</button>
+      <button class="btn btn-check btn-sm" id="check-all-btn" onclick="checkAll(this)">↻ Check all</button>
+      <button class="btn btn-success btn-sm" id="update-all-btn" onclick="confirmUpdateAll()" disabled>⬆ Update all</button>
     </div>
   </div>
 
@@ -494,11 +548,11 @@
   <div class="grid" id="grid"></div>
 </main>
 
-<!-- ── confirm update-all modal ── -->
+<!-- confirm modal -->
 <div class="modal-backdrop" id="confirm-modal" onclick="confirmBackdropClose(event)">
-  <div class="modal" style="max-width:380px">
+  <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">⬆️ Update all containers?</span>
+      <span class="modal-title">Update all containers?</span>
       <button class="modal-close" onclick="closeConfirm()">✕</button>
     </div>
     <div class="modal-body">
@@ -522,66 +576,49 @@ let isScanning = false;
 let pollInterval = 4000;
 let pollTimer = null;
 
-// ── drawer ──────────────────────────────────────────────────────────────────
 function toggleDrawer() {
-  const drawer   = document.getElementById('drawer');
-  const backdrop = document.getElementById('drawer-backdrop');
-  const btn      = document.getElementById('hamburger-btn');
-  const isOpen   = drawer.classList.contains('open');
-  if (isOpen) {
-    closeDrawer();
-  } else {
+  const drawer = document.getElementById('drawer');
+  const isOpen = drawer.classList.contains('open');
+  if (isOpen) closeDrawer();
+  else {
     drawer.classList.add('open');
-    backdrop.classList.add('open');
-    btn.classList.add('open');
-    btn.setAttribute('aria-expanded', 'true');
-    drawer.setAttribute('aria-hidden', 'false');
+    document.getElementById('drawer-backdrop').classList.add('open');
+    const btn = document.getElementById('hamburger-btn');
+    btn.classList.add('open'); btn.setAttribute('aria-expanded','true');
+    drawer.setAttribute('aria-hidden','false');
   }
 }
 function closeDrawer() {
   document.getElementById('drawer').classList.remove('open');
   document.getElementById('drawer-backdrop').classList.remove('open');
   const btn = document.getElementById('hamburger-btn');
-  btn.classList.remove('open');
-  btn.setAttribute('aria-expanded', 'false');
-  document.getElementById('drawer').setAttribute('aria-hidden', 'true');
+  btn.classList.remove('open'); btn.setAttribute('aria-expanded','false');
+  document.getElementById('drawer').setAttribute('aria-hidden','true');
 }
 
-// show auth dot if credentials exist
 async function checkAuthDot() {
   try {
     const r = await fetch('/api/credentials');
     const d = await r.json();
-    const hasCreds = Object.keys(d.registries || {}).length > 0;
-    document.getElementById('drawer-auth-dot').style.display = hasCreds ? 'block' : 'none';
-  } catch (_) {}
+    document.getElementById('drawer-auth-dot').style.display =
+      Object.keys(d.registries||{}).length ? 'block' : 'none';
+  } catch(_){}
 }
 
-// ── adaptive polling ──────────────────────────────────────────────────────────
 function schedulePoll() {
   if (pollTimer) clearTimeout(pollTimer);
-  pollTimer = setTimeout(async () => {
-    await poll();
-    schedulePoll();
-  }, pollInterval);
+  pollTimer = setTimeout(async () => { await poll(); schedulePoll(); }, pollInterval);
 }
 
-// ── stat counter animation ────────────────────────────────────────────────────
-const statDisplayed = {};
-const statAnimFrames = {};
-
+const statDisplayed = {}, statAnimFrames = {};
 function animateStat(id, target) {
-  if (statDisplayed[id] === undefined) {
-    statDisplayed[id] = target;
-    document.getElementById(id).textContent = target;
-    return;
-  }
+  if (statDisplayed[id] === undefined) { statDisplayed[id] = target; document.getElementById(id).textContent = target; return; }
   const current = statDisplayed[id];
   if (current === target) return;
   if (statAnimFrames[id]) { cancelAnimationFrame(statAnimFrames[id]); statAnimFrames[id] = null; }
-  const direction = target > current ? 1 : -1;
+  const dir = target > current ? 1 : -1;
   function step() {
-    statDisplayed[id] += direction;
+    statDisplayed[id] += dir;
     document.getElementById(id).textContent = statDisplayed[id];
     if (statDisplayed[id] !== target) statAnimFrames[id] = requestAnimationFrame(step);
     else statAnimFrames[id] = null;
@@ -589,216 +626,156 @@ function animateStat(id, target) {
   statAnimFrames[id] = requestAnimationFrame(step);
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 const escAttr = escHtml;
 
 function formatRelativeTime(isoStr) {
   if (!isoStr) return '';
-  const date = new Date(isoStr);
-  if (isNaN(date)) return '';
-  const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diffSec < 60)  return 'just now';
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60)  return `${diffMin}m ago`;
-  const diffHr  = Math.floor(diffMin / 60);
-  if (diffHr < 24)   return `${diffHr}h ago`;
-  return `${Math.floor(diffHr / 24)}d ago`;
+  const d = new Date(isoStr); if (isNaN(d)) return '';
+  const s = Math.floor((Date.now()-d)/1000);
+  if (s<60) return 'just now';
+  const m=Math.floor(s/60); if (m<60) return `${m}m ago`;
+  const h=Math.floor(m/60); if (h<24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
 }
 
-// ── grid columns ──────────────────────────────────────────────────────────────
 const COLS_KEY = 'dockpatch_cols';
-
 function applyColumns() {
   const saved = localStorage.getItem(COLS_KEY);
-  const grid  = document.getElementById('grid');
-  if (saved && parseInt(saved) >= 1) {
-    grid.style.gridTemplateColumns = `repeat(${parseInt(saved)}, 1fr)`;
-  } else {
-    applyResponsiveCols();
-  }
+  const grid = document.getElementById('grid');
+  if (saved && parseInt(saved)>=1) grid.style.gridTemplateColumns=`repeat(${parseInt(saved)},1fr)`;
+  else applyResponsiveCols();
 }
 function applyResponsiveCols() {
   const saved = localStorage.getItem(COLS_KEY);
-  if (saved && parseInt(saved) >= 1) return;
-  const w    = window.innerWidth;
-  const grid = document.getElementById('grid');
-  if      (w <= 480)  grid.style.gridTemplateColumns = '1fr';
-  else if (w <= 750)  grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
-  else if (w <= 1100) grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-  else                grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+  if (saved && parseInt(saved)>=1) return;
+  const w = window.innerWidth, grid = document.getElementById('grid');
+  if      (w<=480)  grid.style.gridTemplateColumns='1fr';
+  else if (w<=750)  grid.style.gridTemplateColumns='repeat(2,1fr)';
+  else if (w<=1100) grid.style.gridTemplateColumns='repeat(3,1fr)';
+  else              grid.style.gridTemplateColumns='repeat(4,1fr)';
 }
 window.addEventListener('resize', applyResponsiveCols);
 applyColumns();
 
-// ── poll ──────────────────────────────────────────────────────────────────────
 async function poll() {
-  if (pollInFlight) return;
-  pollInFlight = true;
+  if (pollInFlight) return; pollInFlight = true;
   try {
-    const r = await fetch('/api/containers');
-    const d = await r.json();
-    containers = d.containers;
-    isScanning = d.checking_all;
-
+    const r = await fetch('/api/containers'), d = await r.json();
+    containers = d.containers; isScanning = d.checking_all;
     const pill = document.getElementById('scanning-pill');
-    if (isScanning) {
-      pill.classList.add('visible');
-    } else {
-      if (wasChecking) toast('Update check complete', 'success');
-      pill.classList.remove('visible');
-    }
+    if (isScanning) pill.classList.add('visible');
+    else { if (wasChecking) toast('Update check complete','success'); pill.classList.remove('visible'); }
     wasChecking = isScanning;
-
-    const hasUpdates = containers.some(c => c.update_status === 'update_available' && !c.is_self);
-    const busyAny    = isScanning || containers.some(c => c.update_status === 'updating' || c.update_status === 'checking');
-    document.getElementById('check-all-btn').disabled  = isScanning;
-    document.getElementById('update-all-btn').disabled = !hasUpdates || busyAny;
+    const hasUpdates = containers.some(c=>c.update_status==='update_available'&&!c.is_self);
+    const busyAny = isScanning||containers.some(c=>c.update_status==='updating'||c.update_status==='checking');
+    document.getElementById('check-all-btn').disabled = isScanning;
+    document.getElementById('update-all-btn').disabled = !hasUpdates||busyAny;
     pollInterval = busyAny ? 1500 : 5000;
     updateStats(isScanning);
-  } finally {
-    pollInFlight = false;
-  }
+  } finally { pollInFlight = false; }
 }
 
-function toast(msg, type = 'info') {
+function toast(msg, type='info') {
   const el = document.createElement('div');
-  el.className = 'toast ' + type;
-  el.textContent = msg;
+  el.className = 'toast '+type; el.textContent = msg;
   document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => el.remove(), 4000);
+  setTimeout(()=>el.remove(), 4000);
 }
 
-// ── render ────────────────────────────────────────────────────────────────────
 function renderGrid() {
   const query = document.getElementById('search').value.toLowerCase();
-  const grid  = document.getElementById('grid');
-  const filtered = containers.filter(c =>
-    c.name.toLowerCase().includes(query) || c.image.toLowerCase().includes(query)
-  );
-  const topStatus = s => (s === 'update_available' || s === 'updating') ? 0 : 1;
-  filtered.sort((a, b) => {
-    const diff = topStatus(a.update_status) - topStatus(b.update_status);
-    return diff !== 0 ? diff : a.name.localeCompare(b.name);
-  });
-  if (filtered.length === 0) { grid.innerHTML = '<div class="empty">No containers found</div>'; return; }
+  const grid = document.getElementById('grid');
+  const filtered = containers.filter(c=>c.name.toLowerCase().includes(query)||c.image.toLowerCase().includes(query));
+  const topStatus = s=>(s==='update_available'||s==='updating')?0:1;
+  filtered.sort((a,b)=>{ const d=topStatus(a.update_status)-topStatus(b.update_status); return d||a.name.localeCompare(b.name); });
+
+  if (!filtered.length) {
+    grid.innerHTML='<div class="empty"><div class="empty-icon">🔍</div>No containers found</div>';
+    return;
+  }
 
   grid.innerHTML = filtered.map(c => {
-    let cardClass = 'card';
-    if      (c.is_self)                                   cardClass += ' is-self';
-    else if (c.update_status === 'update_available')      cardClass += ' has-update';
-    else if (c.update_status === 'checking')              cardClass += ' is-checking';
-    else if (c.update_status === 'updating')              cardClass += ' is-updating';
-    else if (c.update_status === 'custom')                cardClass += ' is-custom';
-    else if (c.update_status === 'error')                 cardClass += ' is-error';
+    let cls = 'card';
+    if      (c.is_self)                              cls += ' is-self';
+    else if (c.update_status==='update_available')   cls += ' has-update';
+    else if (c.update_status==='checking')           cls += ' is-checking';
+    else if (c.update_status==='updating')           cls += ' is-updating';
+    else if (c.update_status==='custom')             cls += ' is-custom';
+    else if (c.update_status==='error')              cls += ' is-error';
 
-    let statusBadge;
-    if      (c.status === 'running') statusBadge = '<span class="badge badge-running">▶ running</span>';
-    else if (c.status === 'exited')  statusBadge = '<span class="badge badge-exited">■ exited</span>';
-    else if (c.status === 'paused')  statusBadge = '<span class="badge badge-paused">⏸ paused</span>';
-    else                             statusBadge = `<span class="badge badge-other">${escHtml(c.status)}</span>`;
+    const sBadge = c.status==='running' ? '<span class="badge badge-running">● running</span>'
+                 : c.status==='exited'  ? '<span class="badge badge-exited">● exited</span>'
+                 : c.status==='paused'  ? '<span class="badge badge-paused">● paused</span>'
+                 : `<span class="badge badge-other">${escHtml(c.status)}</span>`;
 
-    let updateBadge;
-    if      (c.update_status === 'up_to_date')       updateBadge = '<span class="badge badge-uptodate">✓ up to date</span>';
-    else if (c.update_status === 'update_available') updateBadge = '<span class="badge badge-available">⬆ update available</span>';
-    else if (c.update_status === 'checking')         updateBadge = '<span class="badge badge-checking">⟳ checking…</span>';
-    else if (c.update_status === 'updating')         updateBadge = '<span class="badge badge-updating">↻ updating…</span>';
-    else if (c.update_status === 'custom')           updateBadge = `<span class="badge badge-custom" title="${escAttr(c.update_reason)}">◆ custom image</span>`;
-    else if (c.update_status === 'error')            updateBadge = `<span class="badge badge-error" title="${escAttr(c.update_reason)}">✕ error</span>`;
-    else                                             updateBadge = '<span class="badge badge-unknown">? not checked</span>';
+    const uBadge = c.update_status==='up_to_date'       ? '<span class="badge badge-uptodate">✓ up to date</span>'
+                 : c.update_status==='update_available'  ? '<span class="badge badge-available">⬆ update available</span>'
+                 : c.update_status==='checking'          ? '<span class="badge badge-checking">⟳ checking…</span>'
+                 : c.update_status==='updating'          ? '<span class="badge badge-updating">↻ updating…</span>'
+                 : c.update_status==='custom'            ? `<span class="badge badge-custom" title="${escAttr(c.update_reason)}">◆ custom</span>`
+                 : c.update_status==='error'             ? `<span class="badge badge-error" title="${escAttr(c.update_reason)}">✕ error</span>`
+                 : '<span class="badge badge-unknown">? not checked</span>';
 
     let actions;
     if (c.is_self) {
       actions = '<span class="self-lock" title="Cannot update self while running">🔒 self</span>';
-    } else if (c.update_status === 'custom') {
-      actions = '<span class="self-lock" title="Custom image (digest-only or local)">📦 custom</span>';
+    } else if (c.update_status==='custom') {
+      actions = '<span class="self-lock" title="Custom / local image">◆</span>';
     } else {
-      const busy = c.update_status === 'checking' || c.update_status === 'updating';
-      actions = `<button class="btn btn-check btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>↻ Check</button>`;
-      if (c.update_status === 'update_available') {
-        actions += ` <button class="btn btn-success btn-sm" onclick="updateOne(this,'${escAttr(c.name)}')" ${busy ? 'disabled' : ''}>Update</button>`;
-      }
+      const busy = c.update_status==='checking'||c.update_status==='updating';
+      actions = `<button class="btn btn-check btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy?'disabled':''}>↻ Check</button>`;
+      if (c.update_status==='update_available')
+        actions += ` <button class="btn btn-success btn-sm" onclick="updateOne(this,'${escAttr(c.name)}')" ${busy?'disabled':''}>⬆ Update</button>`;
     }
 
-    let metaHtml = '';
+    let meta = '';
     if (c.last_updated) {
-      const rel   = formatRelativeTime(c.last_updated);
-      const okStr = c.last_update_ok === true
-        ? '<span class="meta-ok">✓</span>'
-        : c.last_update_ok === false ? '<span class="meta-fail">✕ failed</span>' : '';
-      const imgStr = c.last_update_image ? ` · <span title="${escAttr(c.last_update_image)}">${escHtml(c.last_update_image.split('/').pop())}</span>` : '';
-      metaHtml = `<div class="card-meta">${okStr} Updated ${escHtml(rel)}${imgStr}</div>`;
+      const rel = formatRelativeTime(c.last_updated);
+      const ok  = c.last_update_ok===true ? '<span class="meta-ok">✓</span>' : c.last_update_ok===false ? '<span class="meta-fail">✕</span>' : '';
+      const img = c.last_update_image ? ` · ${escHtml(c.last_update_image.split('/').pop())}` : '';
+      meta = `<div class="card-meta">${ok} Updated ${escHtml(rel)}${img}</div>`;
     }
 
-    const showProgress = c.update_status === 'checking' || c.update_status === 'updating';
-    return `<div class="${cardClass}">
+    const prog = c.update_status==='checking'||c.update_status==='updating';
+    return `<div class="${cls}">
       <div class="card-top">
-        <div class="card-name">${escHtml(c.name)}${c.is_self ? ' <span class="self-badge">SELF</span>' : ''}</div>
-        <div class="card-state">${statusBadge}</div>
+        <div class="card-name">${escHtml(c.name)}${c.is_self?' <span class="self-badge">SELF</span>':''}</div>
+        <div class="card-state">${sBadge}</div>
       </div>
       <div class="card-image">${escHtml(c.image)}</div>
-      ${metaHtml}
-      ${showProgress ? '<div class="card-progress"><div class="card-progress-bar"></div></div>' : ''}
-      <div class="card-bottom">
-        ${updateBadge}
-        <div class="card-actions">${actions}</div>
-      </div>
+      ${meta}
+      ${prog?'<div class="card-progress"><div class="card-progress-bar"></div></div>':''}
+      <div class="card-bottom">${uBadge}<div class="card-actions">${actions}</div></div>
     </div>`;
   }).join('');
 }
 
 function updateStats(scanning) {
-  const unknown = containers.filter(c => c.update_status === 'unknown').length;
-  const errors  = containers.filter(c => c.update_status === 'error').length;
-  const custom  = containers.filter(c => c.update_status === 'custom').length;
+  const unknown = containers.filter(c=>c.update_status==='unknown').length;
+  const errors  = containers.filter(c=>c.update_status==='error').length;
+  const custom  = containers.filter(c=>c.update_status==='custom').length;
   animateStat('s-total',    containers.length);
-  animateStat('s-updates',  containers.filter(c => c.update_status === 'update_available').length);
-  animateStat('s-uptodate', containers.filter(c => c.update_status === 'up_to_date').length);
-  animateStat('s-unknown',  unknown + errors + custom);
-  let unknownLabel;
-  if (scanning) unknownLabel = 'Checking…';
-  else if (errors > 0 && unknown === 0 && custom === 0) unknownLabel = 'Errors';
-  else if (errors === 0 && unknown === 0 && custom > 0) unknownLabel = 'Custom images';
-  else unknownLabel = 'Not checked / other';
-  document.getElementById('s-unknown-label').textContent = unknownLabel;
+  animateStat('s-updates',  containers.filter(c=>c.update_status==='update_available').length);
+  animateStat('s-uptodate', containers.filter(c=>c.update_status==='up_to_date').length);
+  animateStat('s-unknown',  unknown+errors+custom);
+  document.getElementById('s-unknown-label').textContent =
+    scanning ? 'Checking…' : errors&&!unknown&&!custom ? 'Errors' : !errors&&!unknown&&custom ? 'Custom images' : 'Not checked / other';
   renderGrid();
 }
 
-// ── actions ───────────────────────────────────────────────────────────────────
-async function checkAll(btn) {
-  btn.disabled = true;
-  await fetch('/api/check/all', { method: 'POST' });
-  poll();
-}
+async function checkAll(btn) { btn.disabled=true; await fetch('/api/check/all',{method:'POST'}); poll(); }
 function confirmUpdateAll() {
-  const count = containers.filter(c => c.update_status === 'update_available' && !c.is_self).length;
-  document.getElementById('confirm-count').textContent = count;
+  document.getElementById('confirm-count').textContent = containers.filter(c=>c.update_status==='update_available'&&!c.is_self).length;
   document.getElementById('confirm-modal').classList.add('open');
 }
 function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
-function confirmBackdropClose(e) { if (e.target === document.getElementById('confirm-modal')) closeConfirm(); }
-async function doUpdateAll() {
-  closeConfirm();
-  document.getElementById('update-all-btn').disabled = true;
-  await fetch('/api/update/all', { method: 'POST' });
-  poll();
-}
-async function checkOne(btn, name) {
-  btn.disabled = true;
-  await fetch(`/api/check/${encodeURIComponent(name)}`, { method: 'POST' });
-  poll();
-}
-async function updateOne(btn, name) {
-  btn.disabled = true;
-  await fetch(`/api/update/${encodeURIComponent(name)}`, { method: 'POST' });
-  poll();
-}
+function confirmBackdropClose(e) { if(e.target===document.getElementById('confirm-modal')) closeConfirm(); }
+async function doUpdateAll() { closeConfirm(); document.getElementById('update-all-btn').disabled=true; await fetch('/api/update/all',{method:'POST'}); poll(); }
+async function checkOne(btn,name) { btn.disabled=true; await fetch(`/api/check/${encodeURIComponent(name)}`,{method:'POST'}); poll(); }
+async function updateOne(btn,name) { btn.disabled=true; await fetch(`/api/update/${encodeURIComponent(name)}`,{method:'POST'}); poll(); }
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeConfirm(); closeDrawer(); }
-});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeConfirm(); closeDrawer(); } });
 
 applyColumns();
 checkAuthDot();
