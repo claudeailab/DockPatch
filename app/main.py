@@ -14,13 +14,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.3.3"
+VERSION = "0.4.0"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
 
 SETTINGS_FILE     = "/data/settings.json"
 CREDENTIALS_FILE  = "/data/credentials.json"
+HISTORY_FILE      = "/data/update_history.json"
 
 # ── state ─────────────────────────────────────────────────────────────────────
 container_cache: dict[str, dict] = {}
@@ -68,7 +69,6 @@ def save_settings(s: dict):
     """Atomically write settings so a crash never corrupts the file."""
     os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)
     dir_ = os.path.dirname(SETTINGS_FILE)
-    # Write to a temp file in the same directory, then rename (atomic on POSIX)
     fd, tmp = tempfile.mkstemp(dir=dir_, prefix=".settings_", suffix=".tmp")
     try:
         with os.fdopen(fd, "w") as f:
@@ -80,6 +80,38 @@ def save_settings(s: dict):
         except OSError:
             pass
         raise
+
+# ── update history ────────────────────────────────────────────────────────────
+def load_history() -> dict:
+    try:
+        with open(HISTORY_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def save_history(history: dict):
+    os.makedirs(os.path.dirname(HISTORY_FILE), exist_ok=True)
+    dir_ = os.path.dirname(HISTORY_FILE)
+    fd, tmp = tempfile.mkstemp(dir=dir_, prefix=".history_", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(history, f, indent=2)
+        os.replace(tmp, HISTORY_FILE)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+def record_update(name: str, success: bool, image: str = ""):
+    history = load_history()
+    history[name] = {
+        "last_updated":     datetime.datetime.utcnow().isoformat() + "Z",
+        "last_update_ok":   success,
+        "last_update_image": image,
+    }
+    save_history(history)
 
 # ── registry credentials ──────────────────────────────────────────────────────
 def load_credentials() -> dict:
@@ -166,8 +198,6 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
         log.info("Check %s → update_available (image not local)", name)
         return "update_available", ""
     except Exception:
-        # Any other error inspecting the local image — container is running so
-        # the image exists; we just can't read its metadata. Treat as custom.
         log.info("Check %s → custom (local image lookup error)", name)
         return "custom", ""
 
@@ -181,11 +211,8 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
         reason = str(e)
         if "unauthorized" in reason.lower() or "authentication" in reason.lower():
             if auth:
-                # Had credentials but still got 401 — they are wrong or expired
                 log.warning("pull_check %s: auth failed with configured credentials", name)
                 return "error", "Registry auth failed — check credentials in settings"
-            # No credentials configured: 401 before 404 is normal for many registries.
-            # If the image lives locally it is custom; otherwise prompt to add credentials.
             if image_exists_locally:
                 log.info("Check %s → custom (registry auth challenge, image is local)", name)
                 return "custom", ""
@@ -195,17 +222,13 @@ def pull_check(name: str, image_str: str) -> tuple[str, str]:
             log.warning("pull_check %s: %s", name, reason)
             return "error", reason
         else:
-            # For any other registry error (not found, connection error, etc),
-            # if image exists locally, treat it as a custom/local image
             if image_exists_locally:
                 log.info("Check %s → custom (registry unavailable/not found)", name)
                 return "custom", "Custom image (not in registry)"
-            # If image doesn't exist locally and registry is unavailable, it's an error
             reason = str(e)[:120]
             log.warning("pull_check %s: %s", name, reason)
             return "error", reason
     except Exception as e:
-        # If image exists locally, treat unknown errors as custom too
         if image_exists_locally:
             log.info("Check %s → custom (registry check failed)", name)
             return "custom", "Custom image (registry check failed)"
@@ -231,12 +254,14 @@ def snapshot_containers() -> list[dict]:
         log.error("Failed to list containers: %s", e)
         return []
 
+    history = load_history()
     result = []
     with cache_lock:
         for c in containers:
             name = c.name.lstrip("/")
             image_str = get_image_str(c)
             cached = container_cache.get(name, {})
+            hist   = history.get(name, {})
 
             if name in checking_set:
                 update_status = "checking"
@@ -248,13 +273,21 @@ def snapshot_containers() -> list[dict]:
                 update_status = cached.get("update_status", "unknown")
                 reason = cached.get("update_reason", "")
 
+            # Parse container uptime from the Status string (e.g. "Up 3 days")
+            raw_status = c.attrs.get("State", {}).get("Status", c.status)
+            started_at = c.attrs.get("State", {}).get("StartedAt", "")
+
             result.append({
-                "name":          name,
-                "image":         image_str,
-                "status":        c.status,
-                "is_self":       name == SELF_NAME,
-                "update_status": update_status,
-                "update_reason": reason,
+                "name":              name,
+                "image":             image_str,
+                "status":            c.status,
+                "started_at":        started_at,
+                "is_self":           name == SELF_NAME,
+                "update_status":     update_status,
+                "update_reason":     reason,
+                "last_updated":      hist.get("last_updated", ""),
+                "last_update_ok":    hist.get("last_update_ok", None),
+                "last_update_image": hist.get("last_update_image", ""),
             })
 
     result.sort(key=lambda x: x["name"].lower())
@@ -406,12 +439,14 @@ def _do_update(name: str) -> tuple[bool, str]:
         with cache_lock:
             container_cache[name] = {"update_status": "up_to_date", "update_reason": ""}
 
+        record_update(name, True, image_str)
         _emit(name, f"✅  {name} updated successfully → {new_c.id[:12]}")
         log.info("Updated %s → %s", name, new_c.id[:12])
         return True, ""
     except Exception as e:
         log.error("Update %s failed: %s", name, e)
         _emit(name, f"❌  Error: {e}")
+        record_update(name, False)
         return False, str(e)
     finally:
         with cache_lock:
@@ -474,9 +509,28 @@ def index():
 
 @app.route("/api/containers")
 def api_containers():
+    containers = snapshot_containers()
+    checking_count = 0
+    with cache_lock:
+        checking_count = len(checking_set)
     return jsonify({
-        "containers":   snapshot_containers(),
-        "checking_all": checking_all_flag.is_set(),
+        "containers":    containers,
+        "checking_all":  checking_all_flag.is_set(),
+        "checking_count": checking_count,
+    })
+
+@app.route("/api/stats")
+def api_stats():
+    containers = snapshot_containers()
+    total    = len(containers)
+    updates  = sum(1 for c in containers if c["update_status"] == "update_available")
+    uptodate = sum(1 for c in containers if c["update_status"] == "up_to_date")
+    custom   = sum(1 for c in containers if c["update_status"] == "custom")
+    errors   = sum(1 for c in containers if c["update_status"] == "error")
+    unknown  = sum(1 for c in containers if c["update_status"] == "unknown")
+    return jsonify({
+        "total": total, "updates": updates, "up_to_date": uptodate,
+        "custom": custom, "errors": errors, "unknown": unknown,
     })
 
 @app.route("/api/check/all", methods=["POST"])
@@ -489,11 +543,28 @@ def api_check_one(name):
     check_one(name)
     return jsonify({"ok": True})
 
+@app.route("/api/update/all", methods=["POST"])
+def api_update_all():
+    """Concurrently kick off updates for all containers with available updates."""
+    started = []
+    skipped = []
+    with cache_lock:
+        names = list(container_cache.keys())
+    for name in names:
+        if name == SELF_NAME:
+            skipped.append(name)
+            continue
+        with cache_lock:
+            info = container_cache.get(name, {})
+        if info.get("update_status") == "update_available":
+            do_update_async(name)
+            started.append(name)
+    return jsonify({"ok": True, "started": started, "skipped": skipped})
+
 @app.route("/api/update/<name>", methods=["POST"])
 def api_update(name):
     if name == SELF_NAME:
         return jsonify({"ok": False, "error": "Cannot update self"})
-    # Run in background; UI polls for status changes
     do_update_async(name)
     return jsonify({"ok": True})
 
@@ -516,6 +587,10 @@ def api_update_log(name):
     return app.response_class(generate(), mimetype="text/event-stream",
                                headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
+@app.route("/api/history")
+def api_history():
+    return jsonify(load_history())
+
 @app.route("/api/settings", methods=["GET"])
 def api_settings_get():
     return jsonify(load_settings())
@@ -524,7 +599,6 @@ def api_settings_get():
 def api_settings_post():
     data = request.get_json(force=True) or {}
 
-    # Validate and sanitise — reject obviously bad values
     def _int(val, default: int) -> int:
         try:
             v = int(val)
@@ -536,7 +610,7 @@ def api_settings_post():
         v = (val or "").strip()
         try:
             h, m = v.split(":")
-            datetime.time(int(h), int(m))  # validate
+            datetime.time(int(h), int(m))
             return f"{int(h):02d}:{int(m):02d}"
         except Exception:
             return ""
