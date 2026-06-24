@@ -33,11 +33,11 @@
       flex-direction: column;
     }
 
-    /* ─────────────────────────────────── header */
+    /* ─────────────────── header */
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 0 20px;
+      padding: 0 16px;
       height: 50px;
       display: flex;
       align-items: center;
@@ -53,30 +53,104 @@
       text-decoration: none; color: var(--text);
     }
     .logo:hover { color: var(--text); }
-    .header-right { display: flex; align-items: center; gap: 8px; }
-    .version { font-size: 11px; color: var(--muted); }
-    .version-wrap { display: flex; align-items: center; gap: 6px; }
-    .github-link { color: var(--muted); display: flex; align-items: center; transition: color .15s; }
-    .github-link:hover { color: var(--text); }
-    .nav-tabs {
-      display: flex; align-items: center; gap: 2px; margin-left: 20px;
+
+    /* hamburger */
+    .hamburger {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      cursor: pointer;
+      width: 34px; height: 34px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 5px; padding: 0;
+      transition: background .15s, color .15s, border-color .15s;
+      flex-shrink: 0;
     }
-    .nav-tab {
-      padding: 6px 14px; border-radius: var(--radius);
+    .hamburger:hover { background: var(--border); color: var(--text); border-color: #3a3d4a; }
+    .hamburger span {
+      display: block; width: 16px; height: 2px;
+      background: currentColor; border-radius: 2px;
+      transition: transform .2s, opacity .2s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ─────────────────── drawer backdrop */
+    #drawer-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: #00000060; z-index: 200;
+    }
+    #drawer-backdrop.open { display: block; }
+
+    /* ─────────────────── drawer */
+    #drawer {
+      position: fixed; top: 0; left: 0;
+      width: 260px; height: 100%;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      z-index: 201;
+      display: flex; flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform .22s cubic-bezier(.4,0,.2,1);
+      overflow-y: auto;
+    }
+    #drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; height: 50px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .drawer-logo {
+      font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; color: var(--text);
+    }
+    .drawer-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 18px; cursor: pointer; padding: 4px 6px; border-radius: 4px;
+    }
+    .drawer-close:hover { color: var(--text); background: var(--border); }
+
+    .drawer-section { padding: 16px 10px 8px; }
+    .drawer-section-label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); padding: 0 8px 8px;
+    }
+    .drawer-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: var(--radius);
       font-size: 13px; font-weight: 500; color: var(--muted);
-      text-decoration: none; transition: background .15s, color .15s;
+      text-decoration: none;
+      transition: background .12s, color .12s;
+      border: none; background: none; width: 100%; text-align: left; cursor: pointer;
     }
-    .nav-tab:hover  { background: var(--border); color: var(--text); }
-    .nav-tab.active { background: var(--accent); color: #fff; }
-
-    /* ─────────────────────────────────── body layout */
-    .settings-layout {
-      display: flex;
-      flex: 1;
-      min-height: 0;
+    .drawer-link:hover  { background: var(--surface2); color: var(--text); }
+    .drawer-link.active { background: #1e3a5f; color: #93c5fd; }
+    .drawer-link .d-icon { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+    .drawer-link .d-dot {
+      margin-left: auto; width: 7px; height: 7px;
+      border-radius: 50%; background: var(--yellow); flex-shrink: 0;
     }
+    .drawer-divider { border: none; border-top: 1px solid var(--border); margin: 6px 10px; }
 
-    /* ─────────────────────────────────── sidebar */
+    .drawer-footer {
+      margin-top: auto; padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .drawer-version { font-size: 11px; color: var(--muted); }
+    .drawer-github { color: var(--muted); display: flex; align-items: center; transition: color .15s; }
+    .drawer-github:hover { color: var(--text); }
+
+    /* ─────────────────── body layout */
+    .settings-layout { display: flex; flex: 1; min-height: 0; }
+
+    /* ─────────────────── settings sidebar */
     .settings-sidebar {
       width: var(--sidebar-w);
       flex-shrink: 0;
@@ -87,202 +161,111 @@
       top: 50px;
       height: calc(100vh - 50px);
       overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+      display: flex; flex-direction: column; gap: 2px;
     }
     .sidebar-heading {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      padding: 4px 10px 8px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); padding: 4px 10px 8px;
     }
     .sidebar-link {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 8px 10px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--muted);
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
-      background: none;
-      width: 100%;
-      text-align: left;
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 10px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      text-decoration: none; cursor: pointer;
+      border: none; background: none; width: 100%; text-align: left;
       transition: background .12s, color .12s;
     }
-    .sidebar-link:hover { background: var(--surface2); color: var(--text); }
-    .sidebar-link.active {
-      background: #1e3a5f;
-      color: #93c5fd;
-    }
-    .sidebar-link .icon { font-size: 15px; flex-shrink: 0; width: 20px; text-align: center; }
+    .sidebar-link:hover  { background: var(--surface2); color: var(--text); }
+    .sidebar-link.active { background: #1e3a5f; color: #93c5fd; }
+    .sidebar-link .icon  { font-size: 15px; flex-shrink: 0; width: 20px; text-align: center; }
     .sidebar-link .badge-dot {
-      margin-left: auto;
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--yellow);
-      flex-shrink: 0;
+      margin-left: auto; width: 7px; height: 7px;
+      border-radius: 50%; background: var(--yellow); flex-shrink: 0;
     }
-    .sidebar-divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 8px 10px;
-    }
+    .sidebar-divider { border: none; border-top: 1px solid var(--border); margin: 8px 10px; }
 
-    /* ─────────────────────────────────── content area */
+    /* ─────────────────── content area */
     .settings-content {
-      flex: 1;
-      min-width: 0;
+      flex: 1; min-width: 0;
       padding: 32px 36px;
       overflow-y: auto;
       max-width: 820px;
     }
 
-    /* ─────────────────────────────────── section panels */
+    /* ─────────────────── panels */
     .settings-panel { display: none; }
     .settings-panel.active { display: block; }
 
-    .panel-header {
-      margin-bottom: 28px;
-    }
+    .panel-header { margin-bottom: 28px; }
     .panel-title {
-      font-size: 20px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 6px;
+      font-size: 20px; font-weight: 700;
+      display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
     }
-    .panel-subtitle {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
+    .panel-subtitle { font-size: 13px; color: var(--muted); line-height: 1.5; }
 
-    /* ─────────────────────────────────── cards within panels */
+    /* ─────────────────── cards */
     .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-bottom: 20px;
     }
     .card-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 13px; font-weight: 700; color: var(--text);
+      margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
     }
-    .card-desc {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-    .card-divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 20px 0;
-    }
-    .card-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
-      margin-top: 20px;
-    }
+    .card-desc { font-size: 12px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+    .card-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
-    /* ─────────────────────────────────── form elements */
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 18px;
-    }
+    /* ─────────────────── form elements */
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
     .form-group:last-of-type { margin-bottom: 0; }
-
     .form-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .04em;
     }
-    .form-hint {
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
+    .form-hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
     .form-hint code {
-      background: var(--border);
-      border-radius: 3px;
-      padding: 1px 4px;
-      font-family: monospace;
-      font-size: 11px;
+      background: var(--border); border-radius: 3px;
+      padding: 1px 4px; font-family: monospace; font-size: 11px;
     }
 
     input[type="number"],
     input[type="text"],
     input[type="password"],
     input[type="time"] {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      padding: 8px 12px;
-      font-size: 13px;
-      outline: none;
-      width: 100%;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      padding: 8px 12px; font-size: 13px; outline: none; width: 100%;
       transition: border-color .15s, box-shadow .15s;
     }
     input[type="number"]:focus,
     input[type="text"]:focus,
     input[type="password"]:focus,
     input[type="time"]:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px #3b82f620;
+      border-color: var(--accent); box-shadow: 0 0 0 3px #3b82f620;
     }
-    input[type="time"] { color-scheme: dark; width: auto; }
+    input[type="time"]   { color-scheme: dark; width: auto; }
     input[type="number"] { max-width: 160px; }
-    input::placeholder { color: var(--muted); opacity: .7; }
+    input::placeholder   { color: var(--muted); opacity: .7; }
 
-    .form-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
+    .form-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .form-row span { color: var(--muted); font-size: 12px; }
 
-    /* ── toggle switch */
+    /* toggle */
     .toggle-row   { display: flex; align-items: center; gap: 10px; }
     .toggle-label { font-size: 13px; color: var(--text); }
     .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; inset: 0;
-      background: var(--border); border-radius: 20px;
-      cursor: pointer; transition: background .2s;
-    }
+    .slider { position: absolute; inset: 0; background: var(--border); border-radius: 20px; cursor: pointer; transition: background .2s; }
     .slider::before {
       content: ""; position: absolute;
       width: 14px; height: 14px; left: 3px; top: 3px;
       background: #fff; border-radius: 50%; transition: transform .2s;
     }
-    .switch input:checked + .slider            { background: var(--accent); }
-    .switch input:checked + .slider::before   { transform: translateX(16px); }
+    .switch input:checked + .slider          { background: var(--accent); }
+    .switch input:checked + .slider::before { transform: translateX(16px); }
 
-    /* ─────────────────────────────────── buttons */
+    /* ─────────────────── buttons */
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 16px; border-radius: var(--radius); border: none;
@@ -298,7 +281,7 @@
     .btn-danger:hover:not(:disabled) { background: #991b1b; border-color: var(--red); filter: none; }
     .btn-sm { padding: 5px 10px; font-size: 12px; }
 
-    /* ─────────────────────────────────── credentials list */
+    /* ─────────────────── credentials */
     .cred-warning {
       font-size: 12px; color: #fbbf24;
       background: #78350f18; border: 1px solid #92400e;
@@ -307,68 +290,53 @@
       display: flex; align-items: flex-start; gap: 8px;
     }
     .cred-warning .warn-icon { flex-shrink: 0; margin-top: 1px; }
-
     .cred-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
-
     .cred-item {
       display: flex; align-items: center; gap: 12px;
-      padding: 12px 14px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      padding: 12px 14px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--radius);
       transition: border-color .15s;
     }
     .cred-item:hover { border-color: #3a3d4a; }
     .cred-icon { font-size: 20px; flex-shrink: 0; }
     .cred-info { flex: 1; min-width: 0; }
     .cred-registry { font-weight: 600; color: var(--text); font-size: 13px; }
-    .cred-meta     { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+    .cred-meta { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
     .cred-token-ok { color: var(--green); }
     .cred-token-no { color: var(--red); }
     .cred-empty { color: var(--muted); font-size: 13px; padding: 12px 0; }
 
-    /* ── add-credential inline form */
     .add-cred-block {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-top: 16px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-top: 16px;
     }
     .add-cred-title {
       font-size: 12px; font-weight: 700; color: var(--muted);
       text-transform: uppercase; letter-spacing: .04em; margin-bottom: 12px;
     }
     .add-cred-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin-bottom: 10px;
     }
 
-    /* ─────────────────────────────────── "about" card */
+    /* ─────────────────── about */
     .about-row {
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 0; border-bottom: 1px solid var(--border);
     }
     .about-row:last-child { border-bottom: none; }
-    .about-key { font-size: 12px; color: var(--muted); }
-    .about-val { font-size: 13px; font-weight: 600; }
+    .about-key  { font-size: 12px; color: var(--muted); }
+    .about-val  { font-size: 13px; font-weight: 600; }
     .about-link { color: var(--accent); text-decoration: none; font-size: 13px; }
     .about-link:hover { text-decoration: underline; }
 
     .info-box {
-      background: #1e3a5f20;
-      border: 1px solid #2d5a8e;
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      font-size: 12px;
-      color: #93c5fd;
-      line-height: 1.6;
-      margin-top: 16px;
+      background: #1e3a5f20; border: 1px solid #2d5a8e;
+      border-radius: var(--radius); padding: 12px 14px;
+      font-size: 12px; color: #93c5fd; line-height: 1.6; margin-top: 16px;
     }
 
-    /* ─────────────────────────────────── toast */
+    /* ─────────────────── toast */
     #toast-container {
       position: fixed; bottom: 20px; right: 20px;
       display: flex; flex-direction: column; gap: 8px; z-index: 999;
@@ -381,73 +349,96 @@
     .toast.success { border-left: 3px solid var(--green); }
     .toast.error   { border-left: 3px solid var(--red); }
     .toast.info    { border-left: 3px solid var(--accent); }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ─────────────────────────────────── mobile */
+    /* ─────────────────── responsive */
     @media (max-width: 720px) {
       .settings-layout { flex-direction: column; }
       .settings-sidebar {
-        width: 100%;
-        height: auto;
-        position: static;
-        flex-direction: row;
-        flex-wrap: wrap;
-        padding: 10px 12px;
-        gap: 4px;
-        border-right: none;
-        border-bottom: 1px solid var(--border);
+        width: 100%; height: auto; position: static;
+        flex-direction: row; flex-wrap: wrap;
+        padding: 10px 12px; gap: 4px;
+        border-right: none; border-bottom: 1px solid var(--border);
         overflow-x: auto;
       }
       .sidebar-heading, .sidebar-divider { display: none; }
       .sidebar-link { padding: 6px 12px; white-space: nowrap; width: auto; }
       .settings-content { padding: 20px 16px; max-width: 100%; }
       .add-cred-grid { grid-template-columns: 1fr; }
-      .nav-tabs { margin-left: 10px; }
-      .nav-tab { padding: 5px 10px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ────────────────────────── header -->
+<!-- ── drawer backdrop ── -->
+<div id="drawer-backdrop" onclick="closeDrawer()"></div>
+
+<!-- ── drawer ── -->
+<nav id="drawer" aria-label="Main navigation" aria-hidden="true">
+  <div class="drawer-header">
+    <a href="/" class="drawer-logo"><span>🐳</span> Dockpatch</a>
+    <button class="drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
+  </div>
+
+  <div class="drawer-section">
+    <div class="drawer-section-label">Navigation</div>
+    <a href="/" class="drawer-link">
+      <span class="d-icon">📦</span> Dashboard
+    </a>
+  </div>
+
+  <hr class="drawer-divider">
+
+  <div class="drawer-section">
+    <div class="drawer-section-label">Settings</div>
+    <button class="drawer-link active" data-panel="automation" onclick="drawerSwitchPanel(this)">
+      <span class="d-icon">🔄</span> Automation
+    </button>
+    <button class="drawer-link" data-panel="auth" onclick="drawerSwitchPanel(this)">
+      <span class="d-icon">🔑</span> Registry Auth
+      <span class="d-dot" id="drawer-auth-dot" style="display:none"></span>
+    </button>
+    <button class="drawer-link" data-panel="display" onclick="drawerSwitchPanel(this)">
+      <span class="d-icon">🖥</span> Display
+    </button>
+    <button class="drawer-link" data-panel="about" onclick="drawerSwitchPanel(this)">
+      <span class="d-icon">ℹ️</span> About
+    </button>
+  </div>
+
+  <div class="drawer-footer">
+    <span class="drawer-version">v{{ version }}</span>
+    <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener"
+       class="drawer-github" title="View on GitHub">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+          0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+          -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+          .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+          -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09
+          2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82
+          2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01
+          2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+    </a>
+  </div>
+</nav>
+
+<!-- ── header ── -->
 <header>
-  <div style="display:flex;align-items:center;">
-    <a href="/" class="logo"><span>🐳</span> Dockpatch</a>
-    <nav class="nav-tabs">
-      <a href="/" class="nav-tab">Dashboard</a>
-      <a href="/settings" class="nav-tab active">⚙ Settings</a>
-    </nav>
-  </div>
-  <div class="header-right">
-    <div class="version-wrap">
-      <span class="version">v{{ version }}</span>
-      <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener"
-         class="github-link" title="View on GitHub">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
-            0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
-            -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
-            .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
-            -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09
-            2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82
-            2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01
-            2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-        </svg>
-      </a>
-    </div>
-  </div>
+  <a href="/" class="logo"><span>🐳</span> Dockpatch</a>
+  <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()"
+          aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+    <span></span><span></span><span></span>
+  </button>
 </header>
 
-<!-- ────────────────────────── body layout -->
+<!-- ── page body ── -->
 <div class="settings-layout">
 
-  <!-- ──────── sidebar -->
-  <aside class="settings-sidebar" id="sidebar">
+  <!-- settings sidebar (desktop) -->
+  <aside class="settings-sidebar">
     <div class="sidebar-heading">Settings</div>
-
     <button class="sidebar-link active" data-panel="automation" onclick="switchPanel(this)">
       <span class="icon">🔄</span> Automation
     </button>
@@ -458,37 +449,30 @@
     <button class="sidebar-link" data-panel="display" onclick="switchPanel(this)">
       <span class="icon">🖥</span> Display
     </button>
-
     <hr class="sidebar-divider">
-
     <button class="sidebar-link" data-panel="about" onclick="switchPanel(this)">
       <span class="icon">ℹ️</span> About
     </button>
   </aside>
 
-  <!-- ──────── content -->
+  <!-- content -->
   <main class="settings-content">
 
-    <!-- ════════════════ AUTOMATION -->
+    <!-- ════ AUTOMATION -->
     <section class="settings-panel active" id="panel-automation">
       <div class="panel-header">
         <div class="panel-title">🔄 Automation</div>
-        <p class="panel-subtitle">
-          Control how often Dockpatch checks for image updates and how it applies them automatically.
-        </p>
+        <p class="panel-subtitle">Control how often Dockpatch checks for image updates and how it applies them automatically.</p>
       </div>
 
-      <!-- Scheduling card -->
       <div class="card">
         <div class="card-title">⏱ Schedule</div>
         <p class="card-desc">Set intervals for automatic checking and updating. Set either to <code>0</code> to disable that schedule entirely.</p>
-
         <div class="form-group">
           <label class="form-label" for="cfg-check">Check interval (hours)</label>
           <input type="number" id="cfg-check" min="0" max="720" placeholder="e.g. 6">
           <span class="form-hint">How often Dockpatch polls all container images against their registry. <code>0</code> = disabled.</span>
         </div>
-
         <div class="form-group">
           <label class="form-label" for="cfg-update">Auto-update interval (hours)</label>
           <input type="number" id="cfg-update" min="0" max="720" placeholder="e.g. 24">
@@ -496,14 +480,13 @@
         </div>
       </div>
 
-      <!-- Maintenance window card -->
       <div class="card">
         <div class="card-title">🌙 Maintenance Window</div>
         <p class="card-desc">
           Restrict auto-updates to a specific time window. Leave both fields empty to allow updates at any time.
-          Overnight ranges are supported (e.g. <code>22:00</code> → <code>04:00</code>). Times use the server's clock — set the <code>TZ</code> environment variable to control the timezone.
+          Overnight ranges are supported (e.g. <code>22:00</code> → <code>04:00</code>).
+          Times use the server's clock — set the <code>TZ</code> environment variable to control the timezone.
         </p>
-
         <div class="form-group">
           <label class="form-label">Window start → end</label>
           <div class="form-row">
@@ -515,11 +498,9 @@
         </div>
       </div>
 
-      <!-- Startup card -->
       <div class="card">
         <div class="card-title">🚀 Startup Behaviour</div>
         <p class="card-desc">Choose what Dockpatch does when it first starts up.</p>
-
         <div class="form-group" style="margin-bottom:0">
           <div class="toggle-row">
             <label class="switch">
@@ -531,15 +512,13 @@
         </div>
       </div>
 
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
         <button class="btn btn-ghost" onclick="loadSettings()">Reset</button>
-        <button class="btn btn-primary" id="save-automation-btn" onclick="saveSettings()">
-          Save automation settings
-        </button>
+        <button class="btn btn-primary" id="save-automation-btn" onclick="saveSettings()">Save automation settings</button>
       </div>
     </section>
 
-    <!-- ════════════════ REGISTRY AUTH -->
+    <!-- ════ REGISTRY AUTH -->
     <section class="settings-panel" id="panel-auth">
       <div class="panel-header">
         <div class="panel-title">🔑 Registry Authentication</div>
@@ -565,39 +544,36 @@
 
         <hr class="card-divider">
 
-        <!-- Add credential inline form -->
         <div class="add-cred-block">
           <div class="add-cred-title">Add a new registry</div>
           <div class="add-cred-grid">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label" for="creds-reg">Registry host</label>
-              <input type="text"     id="creds-reg"   placeholder="ghcr.io"         autocomplete="off"      spellcheck="false">
+              <input type="text" id="creds-reg" placeholder="ghcr.io" autocomplete="off" spellcheck="false">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label" for="creds-user">Username</label>
-              <input type="text"     id="creds-user"  placeholder="your-username"   autocomplete="off"      spellcheck="false">
+              <input type="text" id="creds-user" placeholder="your-username" autocomplete="off" spellcheck="false">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label" for="creds-token">Token / Password</label>
               <input type="password" id="creds-token" placeholder="ghp_xxxxxxxxxxxx" autocomplete="new-password">
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
-            <button class="btn btn-primary btn-sm" onclick="addCredential()">
-              ＋ Add registry
-            </button>
-            <span class="form-hint" style="margin:0">Common registries: <code>registry-1.docker.io</code> · <code>ghcr.io</code> · <code>registry.gitlab.com</code></span>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+            <button class="btn btn-primary btn-sm" onclick="addCredential()">＋ Add registry</button>
+            <span class="form-hint" style="margin:0">Common: <code>registry-1.docker.io</code> · <code>ghcr.io</code> · <code>registry.gitlab.com</code></span>
           </div>
         </div>
       </div>
 
       <div class="info-box">
-        ℹ️  After adding credentials, trigger a fresh <strong>Check all</strong> from the dashboard so Dockpatch
+        ℹ️ After adding credentials, trigger a fresh <strong>Check all</strong> from the dashboard so Dockpatch
         re-queries registries that previously returned authentication errors.
       </div>
     </section>
 
-    <!-- ════════════════ DISPLAY -->
+    <!-- ════ DISPLAY -->
     <section class="settings-panel" id="panel-display">
       <div class="panel-header">
         <div class="panel-title">🖥 Display</div>
@@ -607,23 +583,22 @@
       <div class="card">
         <div class="card-title">⊞ Cards per row</div>
         <p class="card-desc">Override the automatic responsive column count. Leave blank to let Dockpatch pick the best layout for your screen width.</p>
-
         <div class="form-group" style="margin-bottom:0">
           <label class="form-label" for="cfg-cols">Columns</label>
           <div class="form-row">
             <input type="number" id="cfg-cols" min="1" max="12" placeholder="Auto">
-            <span style="font-size:13px; color:var(--muted)">Leave blank for automatic (responsive)</span>
+            <span style="font-size:13px;color:var(--muted)">Leave blank for automatic (responsive)</span>
           </div>
         </div>
       </div>
 
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
         <button class="btn btn-ghost" onclick="loadDisplaySettings()">Reset</button>
         <button class="btn btn-primary" onclick="saveDisplay()">Save display settings</button>
       </div>
     </section>
 
-    <!-- ════════════════ ABOUT -->
+    <!-- ════ ABOUT -->
     <section class="settings-panel" id="panel-about">
       <div class="panel-header">
         <div class="panel-title">ℹ️ About Dockpatch</div>
@@ -631,26 +606,16 @@
       </div>
 
       <div class="card">
-        <div class="about-row">
-          <span class="about-key">Version</span>
-          <span class="about-val">v{{ version }}</span>
-        </div>
+        <div class="about-row"><span class="about-key">Version</span><span class="about-val">v{{ version }}</span></div>
         <div class="about-row">
           <span class="about-key">Source code</span>
-          <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener" class="about-link">
-            github.com/claudeailab/DockPatch ↗
-          </a>
+          <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener" class="about-link">github.com/claudeailab/DockPatch ↗</a>
         </div>
         <div class="about-row">
           <span class="about-key">Issues / feedback</span>
-          <a href="https://github.com/claudeailab/DockPatch/issues" target="_blank" rel="noopener" class="about-link">
-            Open an issue ↗
-          </a>
+          <a href="https://github.com/claudeailab/DockPatch/issues" target="_blank" rel="noopener" class="about-link">Open an issue ↗</a>
         </div>
-        <div class="about-row">
-          <span class="about-key">License</span>
-          <span class="about-val">MIT</span>
-        </div>
+        <div class="about-row"><span class="about-key">License</span><span class="about-val">MIT</span></div>
         <div class="about-row">
           <span class="about-key">Settings file</span>
           <span class="about-val" style="font-family:monospace;font-size:12px;">/data/settings.json</span>
@@ -680,13 +645,9 @@
 <script>
 const COLS_KEY = 'dockpatch_cols';
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── helpers ───────────────────────────────────────────────────────────────────
 function escHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 const escAttr = escHtml;
 
@@ -698,35 +659,71 @@ function toast(msg, type = 'info') {
   setTimeout(() => el.remove(), 4000);
 }
 
-// ── panel navigation ─────────────────────────────────────────────────────────
+// ── drawer ────────────────────────────────────────────────────────────────────
+function toggleDrawer() {
+  const drawer   = document.getElementById('drawer');
+  const backdrop = document.getElementById('drawer-backdrop');
+  const btn      = document.getElementById('hamburger-btn');
+  const isOpen   = drawer.classList.contains('open');
+  if (isOpen) {
+    closeDrawer();
+  } else {
+    drawer.classList.add('open');
+    backdrop.classList.add('open');
+    btn.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+    drawer.setAttribute('aria-hidden', 'false');
+  }
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-backdrop').classList.remove('open');
+  const btn = document.getElementById('hamburger-btn');
+  btn.classList.remove('open');
+  btn.setAttribute('aria-expanded', 'false');
+  document.getElementById('drawer').setAttribute('aria-hidden', 'true');
+}
+
+// drawer links also switch the settings panel and close the drawer
+function drawerSwitchPanel(btn) {
+  closeDrawer();
+  // find matching sidebar button and delegate
+  const panelId = btn.dataset.panel;
+  const sidebarBtn = document.querySelector(`.settings-sidebar .sidebar-link[data-panel="${CSS.escape(panelId)}"]`);
+  if (sidebarBtn) switchPanel(sidebarBtn);
+}
+
+// ── panel navigation ──────────────────────────────────────────────────────────
 function switchPanel(btn) {
   const panelId = btn.dataset.panel;
 
-  // update sidebar active state
-  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  // sidebar active
+  document.querySelectorAll('.settings-sidebar .sidebar-link').forEach(l => l.classList.remove('active'));
   btn.classList.add('active');
 
-  // show the right panel
+  // drawer active
+  document.querySelectorAll('#drawer .drawer-link[data-panel]').forEach(l => l.classList.remove('active'));
+  const drawerBtn = document.querySelector(`#drawer .drawer-link[data-panel="${CSS.escape(panelId)}"]`);
+  if (drawerBtn) drawerBtn.classList.add('active');
+
+  // show panel
   document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + panelId).classList.add('active');
 
-  // push to URL hash without scrolling
   history.replaceState(null, '', '#' + panelId);
 
-  // lazy-load data for certain panels
   if (panelId === 'auth') loadCredsList();
 }
 
-// restore panel from URL hash on load
 function restorePanelFromHash() {
   const hash = location.hash.replace('#', '');
   if (hash) {
-    const btn = document.querySelector(`.sidebar-link[data-panel="${CSS.escape(hash)}"]`);
+    const btn = document.querySelector(`.settings-sidebar .sidebar-link[data-panel="${CSS.escape(hash)}"]`);
     if (btn) switchPanel(btn);
   }
 }
 
-// ── settings load / save ─────────────────────────────────────────────────────
+// ── settings load / save ──────────────────────────────────────────────────────
 async function loadSettings() {
   try {
     const r = await fetch('/api/settings');
@@ -743,24 +740,17 @@ async function loadSettings() {
 
 async function saveSettings() {
   const btn = document.getElementById('save-automation-btn');
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
+  btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    const checkRaw  = document.getElementById('cfg-check').value;
-    const updateRaw = document.getElementById('cfg-update').value;
-
     const payload = {
-      check_interval_hours:  checkRaw  !== '' ? parseInt(checkRaw,  10) : 0,
-      update_interval_hours: updateRaw !== '' ? parseInt(updateRaw, 10) : 0,
+      check_interval_hours:  parseInt(document.getElementById('cfg-check').value  || '0', 10),
+      update_interval_hours: parseInt(document.getElementById('cfg-update').value || '0', 10),
       check_on_startup:      document.getElementById('cfg-startup').checked,
       update_window_start:   document.getElementById('cfg-window-start').value,
       update_window_end:     document.getElementById('cfg-window-end').value,
     };
-
     const r = await fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
     });
     const d = await r.json();
     if (d.ok) toast('Automation settings saved ✓', 'success');
@@ -768,61 +758,52 @@ async function saveSettings() {
   } catch (e) {
     toast('Network error', 'error');
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Save automation settings';
+    btn.disabled = false; btn.textContent = 'Save automation settings';
   }
 }
 
-// ── display settings ─────────────────────────────────────────────────────────
+// ── display settings ──────────────────────────────────────────────────────────
 function loadDisplaySettings() {
   const saved = localStorage.getItem(COLS_KEY);
   document.getElementById('cfg-cols').value = (saved && parseInt(saved) >= 1) ? parseInt(saved) : '';
 }
-
 function saveDisplay() {
-  const colsRaw = document.getElementById('cfg-cols').value;
-  const colsVal = colsRaw !== '' ? parseInt(colsRaw) : NaN;
-  if (!isNaN(colsVal) && colsVal >= 1) {
-    localStorage.setItem(COLS_KEY, colsVal);
-  } else {
-    localStorage.removeItem(COLS_KEY);
-  }
+  const v = parseInt(document.getElementById('cfg-cols').value);
+  if (!isNaN(v) && v >= 1) localStorage.setItem(COLS_KEY, v);
+  else localStorage.removeItem(COLS_KEY);
   toast('Display settings saved ✓', 'success');
 }
 
-// ── credentials ──────────────────────────────────────────────────────────────
+// ── credentials ───────────────────────────────────────────────────────────────
 async function loadCredsList() {
   const list = document.getElementById('creds-list');
   try {
     const r = await fetch('/api/credentials');
     const d = await r.json();
     const entries = Object.entries(d.registries || {});
-
-    // show/hide the sidebar dot indicator
-    document.getElementById('auth-dot').style.display = entries.length ? 'block' : 'none';
+    const hasCreds = entries.length > 0;
+    // update both dot indicators
+    document.getElementById('auth-dot').style.display        = hasCreds ? 'block' : 'none';
+    document.getElementById('drawer-auth-dot').style.display = hasCreds ? 'block' : 'none';
 
     if (!entries.length) {
       list.innerHTML = '<div class="cred-empty">No registries configured yet.</div>';
       return;
     }
-
     list.innerHTML = entries.map(([reg, info]) => `
-      <div class="cred-item" id="cred-${escAttr(reg)}">
+      <div class="cred-item">
         <span class="cred-icon">🔐</span>
         <div class="cred-info">
           <div class="cred-registry">${escHtml(reg)}</div>
           <div class="cred-meta">
-            <span>${escHtml(info.username)}</span>
-            <span>·</span>
+            <span>${escHtml(info.username)}</span><span>·</span>
             ${info.has_token
               ? '<span class="cred-token-ok">✓ Token set</span>'
               : '<span class="cred-token-no">✕ No token</span>'}
           </div>
         </div>
-        <button class="btn btn-ghost btn-sm"
-                onclick="removeCredential('${escAttr(reg)}', this)">Remove</button>
-      </div>
-    `).join('');
+        <button class="btn btn-ghost btn-sm" onclick="removeCredential('${escAttr(reg)}',this)">Remove</button>
+      </div>`).join('');
   } catch (e) {
     list.innerHTML = '<div class="cred-empty" style="color:var(--red)">Failed to load credentials.</div>';
   }
@@ -832,32 +813,23 @@ async function addCredential() {
   const registry = document.getElementById('creds-reg').value.trim();
   const username = document.getElementById('creds-user').value.trim();
   const password = document.getElementById('creds-token').value.trim();
-
-  if (!registry || !username || !password) {
-    toast('All three fields are required', 'error');
-    return;
-  }
-
+  if (!registry || !username || !password) { toast('All three fields are required', 'error'); return; }
   try {
     const r = await fetch('/api/credentials', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ registry, username, password }),
     });
     const d = await r.json();
-
     if (d.ok) {
-      document.getElementById('creds-reg').value   = '';
-      document.getElementById('creds-user').value  = '';
+      document.getElementById('creds-reg').value = '';
+      document.getElementById('creds-user').value = '';
       document.getElementById('creds-token').value = '';
       toast(`Credentials saved for ${registry} ✓`, 'success');
       loadCredsList();
     } else {
       toast(d.error || 'Failed to save credentials', 'error');
     }
-  } catch (e) {
-    toast('Network error', 'error');
-  }
+  } catch (e) { toast('Network error', 'error'); }
 }
 
 async function removeCredential(registry, btn) {
@@ -866,17 +838,16 @@ async function removeCredential(registry, btn) {
     await fetch(`/api/credentials/${encodeURIComponent(registry)}`, { method: 'DELETE' });
     toast(`Removed ${registry}`, 'info');
     loadCredsList();
-  } catch (e) {
-    toast('Failed to remove credential', 'error');
-    btn.disabled = false;
-  }
+  } catch (e) { toast('Failed to remove credential', 'error'); btn.disabled = false; }
 }
 
 // ── init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
 loadSettings();
 loadDisplaySettings();
-loadCredsList();          // load for the dot indicator even if sidebar not active
-restorePanelFromHash();   // must run after DOM is ready (it is — this is end-of-body)
+loadCredsList();
+restorePanelFromHash();
 </script>
 </body>
 </html>
