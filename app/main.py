@@ -544,6 +544,10 @@ def scheduler_loop():
 def index():
     return render_template("index.html", version=VERSION)
 
+@app.route("/settings")
+def settings_page():
+    return render_template("settings.html", version=VERSION)
+
 @app.route("/api/containers")
 def api_containers():
     containers = snapshot_containers()
