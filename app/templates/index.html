@@ -21,6 +21,7 @@
       --yellow:    #f5a623;
       --red:       #ff5151;
       --purple:    #a78bfa;
+      --orange:    #fb923c;
       --muted:     #5a6282;
       --muted2:    #7b84a3;
       --text:      #dde3f5;
@@ -297,6 +298,19 @@
       box-shadow: 0 2px 12px rgba(59,130,246,.3);
     }
     .btn-check:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(59,130,246,.45); }
+
+    .btn-exclude {
+      background: rgba(251,146,60,.08); color: var(--orange);
+      border: 1px solid rgba(251,146,60,.25);
+    }
+    .btn-exclude:hover:not(:disabled) { background: rgba(251,146,60,.18); box-shadow: 0 4px 16px rgba(251,146,60,.2); }
+
+    .btn-unexclude {
+      background: rgba(34,208,106,.08); color: var(--green);
+      border: 1px solid rgba(34,208,106,.25);
+    }
+    .btn-unexclude:hover:not(:disabled) { background: rgba(34,208,106,.18); box-shadow: 0 4px 16px rgba(34,208,106,.2); }
+
     .btn-sm { padding: 5px 13px; font-size: 12px; }
 
     /* ── grid ── */
@@ -330,6 +344,7 @@
     .card.is-custom   { border-top: 2px solid #8b5cf6; }
     .card.is-error    { border-top: 2px solid var(--red); }
     .card.is-self     { border-top: 2px solid #4f46e5; }
+    .card.is-excluded { border-top: 2px solid var(--orange); opacity: .85; }
 
     .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
     .card-name {
@@ -341,6 +356,11 @@
       font-size: 9.5px; background: rgba(79,70,229,.3); color: #a5b4fc;
       padding: 2px 6px; border-radius: 9999px; font-weight: 700;
       border: 1px solid rgba(165,180,252,.2); flex-shrink: 0; letter-spacing: .04em;
+    }
+    .excluded-badge {
+      font-size: 9.5px; background: rgba(251,146,60,.15); color: var(--orange);
+      padding: 2px 6px; border-radius: 9999px; font-weight: 700;
+      border: 1px solid rgba(251,146,60,.3); flex-shrink: 0; letter-spacing: .04em;
     }
     .card-state { flex-shrink: 0; }
 
@@ -477,6 +497,10 @@
       <span class="d-icon">🔑</span> Registry Auth
       <span class="d-dot" id="drawer-auth-dot" style="display:none"></span>
     </a>
+    <a href="/settings#excluded" class="drawer-link">
+      <span class="d-icon">🚫</span> Excluded
+      <span class="d-dot" id="drawer-excluded-dot" style="display:none"></span>
+    </a>
     <a href="/settings#display" class="drawer-link">
       <span class="d-icon">◻</span> Display
     </a>
@@ -605,6 +629,15 @@ async function checkAuthDot() {
   } catch(_){}
 }
 
+async function checkExcludedDot() {
+  try {
+    const r = await fetch('/api/excluded');
+    const d = await r.json();
+    document.getElementById('drawer-excluded-dot').style.display =
+      (d.excluded||[]).length ? 'block' : 'none';
+  } catch(_){}
+}
+
 function schedulePoll() {
   if (pollTimer) clearTimeout(pollTimer);
   pollTimer = setTimeout(async () => { await poll(); schedulePoll(); }, pollInterval);
@@ -667,7 +700,7 @@ async function poll() {
     if (isScanning) pill.classList.add('visible');
     else { if (wasChecking) toast('Update check complete','success'); pill.classList.remove('visible'); }
     wasChecking = isScanning;
-    const hasUpdates = containers.some(c=>c.update_status==='update_available'&&!c.is_self);
+    const hasUpdates = containers.some(c=>c.update_status==='update_available'&&!c.is_self&&!c.is_excluded);
     const busyAny = isScanning||containers.some(c=>c.update_status==='updating'||c.update_status==='checking');
     document.getElementById('check-all-btn').disabled = isScanning;
     document.getElementById('update-all-btn').disabled = !hasUpdates||busyAny;
@@ -698,6 +731,7 @@ function renderGrid() {
   grid.innerHTML = filtered.map(c => {
     let cls = 'card';
     if      (c.is_self)                              cls += ' is-self';
+    else if (c.is_excluded)                          cls += ' is-excluded';
     else if (c.update_status==='update_available')   cls += ' has-update';
     else if (c.update_status==='checking')           cls += ' is-checking';
     else if (c.update_status==='updating')           cls += ' is-updating';
@@ -717,16 +751,31 @@ function renderGrid() {
                  : c.update_status==='error'             ? `<span class="badge badge-error" title="${escAttr(c.update_reason)}">✕ error</span>`
                  : '<span class="badge badge-unknown">? not checked</span>';
 
+    let nameBadges = '';
+    if (c.is_self)     nameBadges += ' <span class="self-badge">SELF</span>';
+    if (c.is_excluded) nameBadges += ' <span class="excluded-badge">EXCLUDED</span>';
+
     let actions;
     if (c.is_self) {
       actions = '<span class="self-lock" title="Cannot update self while running">🔒 self</span>';
     } else if (c.update_status==='custom') {
-      actions = '<span class="self-lock" title="Custom / local image">◆</span>';
+      actions = `<button class="btn btn-exclude btn-sm" onclick="toggleExclude(this,'${escAttr(c.name)}',${c.is_excluded})" title="${c.is_excluded?'Remove from exclusion list':'Exclude from updates'}">
+        ${c.is_excluded ? '✓ Unexclude' : '🚫 Exclude'}
+      </button>`;
     } else {
       const busy = c.update_status==='checking'||c.update_status==='updating';
-      actions = `<button class="btn btn-check btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy?'disabled':''}>↻ Check</button>`;
-      if (c.update_status==='update_available')
-        actions += ` <button class="btn btn-success btn-sm" onclick="updateOne(this,'${escAttr(c.name)}')" ${busy?'disabled':''}>⬆ Update</button>`;
+      const excludeBtn = `<button class="btn ${c.is_excluded?'btn-unexclude':'btn-exclude'} btn-sm" onclick="toggleExclude(this,'${escAttr(c.name)}',${c.is_excluded})" title="${c.is_excluded?'Remove from exclusion list':'Exclude from updates'}">
+        ${c.is_excluded ? '✓ Unexclude' : '🚫 Exclude'}
+      </button>`;
+      if (c.is_excluded) {
+        // excluded: show only unexclude, no update buttons
+        actions = excludeBtn;
+      } else {
+        actions = `<button class="btn btn-check btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy?'disabled':''}>↻ Check</button>`;
+        if (c.update_status==='update_available')
+          actions += ` <button class="btn btn-success btn-sm" onclick="updateOne(this,'${escAttr(c.name)}')" ${busy?'disabled':''}>⬆ Update</button>`;
+        actions += ' ' + excludeBtn;
+      }
     }
 
     let meta = '';
@@ -740,7 +789,7 @@ function renderGrid() {
     const prog = c.update_status==='checking'||c.update_status==='updating';
     return `<div class="${cls}">
       <div class="card-top">
-        <div class="card-name">${escHtml(c.name)}${c.is_self?' <span class="self-badge">SELF</span>':''}</div>
+        <div class="card-name">${escHtml(c.name)}${nameBadges}</div>
         <div class="card-state">${sBadge}</div>
       </div>
       <div class="card-image">${escHtml(c.image)}</div>
@@ -756,7 +805,7 @@ function updateStats(scanning) {
   const errors  = containers.filter(c=>c.update_status==='error').length;
   const custom  = containers.filter(c=>c.update_status==='custom').length;
   animateStat('s-total',    containers.length);
-  animateStat('s-updates',  containers.filter(c=>c.update_status==='update_available').length);
+  animateStat('s-updates',  containers.filter(c=>c.update_status==='update_available'&&!c.is_excluded).length);
   animateStat('s-uptodate', containers.filter(c=>c.update_status==='up_to_date').length);
   animateStat('s-unknown',  unknown+errors+custom);
   document.getElementById('s-unknown-label').textContent =
@@ -766,7 +815,7 @@ function updateStats(scanning) {
 
 async function checkAll(btn) { btn.disabled=true; await fetch('/api/check/all',{method:'POST'}); poll(); }
 function confirmUpdateAll() {
-  document.getElementById('confirm-count').textContent = containers.filter(c=>c.update_status==='update_available'&&!c.is_self).length;
+  document.getElementById('confirm-count').textContent = containers.filter(c=>c.update_status==='update_available'&&!c.is_self&&!c.is_excluded).length;
   document.getElementById('confirm-modal').classList.add('open');
 }
 function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
@@ -775,10 +824,25 @@ async function doUpdateAll() { closeConfirm(); document.getElementById('update-a
 async function checkOne(btn,name) { btn.disabled=true; await fetch(`/api/check/${encodeURIComponent(name)}`,{method:'POST'}); poll(); }
 async function updateOne(btn,name) { btn.disabled=true; await fetch(`/api/update/${encodeURIComponent(name)}`,{method:'POST'}); poll(); }
 
+async function toggleExclude(btn, name, currentlyExcluded) {
+  btn.disabled = true;
+  const method = currentlyExcluded ? 'DELETE' : 'POST';
+  try {
+    await fetch(`/api/excluded/${encodeURIComponent(name)}`, { method });
+    toast(currentlyExcluded ? `${name} removed from exclusion list` : `${name} excluded from updates`, 'info');
+    checkExcludedDot();
+    await poll();
+  } catch(e) {
+    toast('Failed to update exclusion', 'error');
+    btn.disabled = false;
+  }
+}
+
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeConfirm(); closeDrawer(); } });
 
 applyColumns();
 checkAuthDot();
+checkExcludedDot();
 poll();
 schedulePoll();
 </script>
