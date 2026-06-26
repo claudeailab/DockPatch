@@ -46,7 +46,6 @@
       backdrop-filter: blur(20px) saturate(1.4);
       -webkit-backdrop-filter: blur(20px) saturate(1.4);
       border-bottom: 1px solid var(--border);
-      padding: 0 20px;
       height: 54px;
       position: sticky;
       top: 0;
@@ -55,13 +54,14 @@
     .header-inner {
       max-width: 1600px;
       margin: 0 auto;
+      padding: 0 22px;
       width: 100%;
       height: 100%;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .logo-version { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+    .logo-version { font-size: 14px; color: var(--text2); font-weight: 700; margin-left: 6px; letter-spacing: -.01em; opacity: .85; }
 
     .logo {
       font-size: 15px; font-weight: 700;
@@ -102,102 +102,90 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* hamburger */
-    .hamburger {
+    /* settings trigger button */
+    .btn-settings-trigger {
       background: var(--surface2);
       border: 1px solid var(--border2);
       border-radius: var(--radius);
       color: var(--muted2);
       cursor: pointer;
-      width: 34px; height: 34px;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 5px; padding: 0;
+      padding: 6px 12px;
+      font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; gap: 6px;
       transition: background .15s, border-color .15s, color .15s;
     }
-    .hamburger:hover { background: var(--surface3); border-color: var(--accent); color: var(--text); }
-    .hamburger span {
-      display: block; width: 15px; height: 1.5px;
-      background: currentColor; border-radius: 2px;
-      transition: transform .22s, opacity .22s;
-    }
-    .hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
-    .hamburger.open span:nth-child(2) { opacity: 0; }
-    .hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+    .btn-settings-trigger:hover { background: var(--surface3); border-color: var(--accent); color: var(--text); }
 
-    /* ── drawer backdrop ── */
-    #drawer-backdrop {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(2px);
-      z-index: 200;
-    }
-    #drawer-backdrop.open { display: block; }
-
-    /* ── drawer ── */
-    #drawer {
-      position: fixed; top: 0; left: 0;
-      width: 256px; height: 100%;
-      background: rgba(10,12,20,0.97);
-      backdrop-filter: blur(24px);
-      border-right: 1px solid var(--border);
-      z-index: 201;
-      display: flex; flex-direction: column;
-      transform: translateX(-100%);
-      transition: transform .24s cubic-bezier(.4,0,.2,1);
+    /* ── settings modal ── */
+    .settings-modal {
+      max-width: 560px !important;
+      max-height: min(90vh, 800px);
       overflow-y: auto;
+      padding: 0 !important;
+      gap: 0 !important;
     }
-    #drawer.open { transform: translateX(0); }
-
-    .drawer-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 16px; height: 54px;
-      border-bottom: 1px solid var(--border); flex-shrink: 0;
-      background: linear-gradient(180deg, rgba(79,126,255,.06) 0%, transparent 100%);
+    .settings-modal .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: var(--surface);
+      z-index: 1;
     }
-    .drawer-logo {
-      font-size: 14px; font-weight: 700;
-      display: flex; align-items: center; gap: 8px;
-      text-decoration: none; color: var(--text);
-    }
-    .drawer-close {
-      background: var(--surface2); border: 1px solid var(--border2);
-      color: var(--muted2); font-size: 14px; cursor: pointer;
-      padding: 5px 7px; border-radius: 7px; line-height: 1;
-      transition: background .12s, color .12s;
-    }
-    .drawer-close:hover { background: var(--surface3); color: var(--text); }
-
-    .drawer-section { padding: 16px 10px 6px; }
-    .drawer-section-label {
-      font-size: 10px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: .1em;
-      color: var(--muted); padding: 0 8px 8px;
-    }
-    .drawer-link {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px; border-radius: var(--radius);
-      font-size: 13px; font-weight: 500; color: var(--muted2);
-      text-decoration: none;
-      transition: background .12s, color .12s;
-      border: none; background: none; width: 100%; text-align: left; cursor: pointer;
-    }
-    .drawer-link:hover  { background: var(--surface2); color: var(--text); }
-    .drawer-link.active { background: rgba(79,126,255,.12); color: var(--accent2); }
-    .drawer-link .d-icon { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; opacity: .85; }
-    .drawer-link .d-dot {
-      margin-left: auto; width: 6px; height: 6px;
-      border-radius: 50%; background: var(--yellow); flex-shrink: 0;
-    }
-    .drawer-divider { border: none; border-top: 1px solid var(--border); margin: 6px 10px; }
-    .drawer-footer {
-      margin-top: auto; padding: 12px 16px;
+    .settings-modal .modal-footer {
+      padding: 14px 24px;
       border-top: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; bottom: 0;
+      background: var(--surface);
     }
-    .drawer-version { font-size: 11px; color: var(--muted); }
-    .drawer-github { color: var(--muted); display: flex; align-items: center; transition: color .15s; }
-    .drawer-github:hover { color: var(--text); }
+    .settings-sections { display: flex; flex-direction: column; }
+    .settings-section { padding: 20px 24px; }
+    .settings-section + .settings-section { border-top: 1px solid var(--border); }
+    .settings-section-title {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); margin-bottom: 14px;
+    }
+    .form-group  { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label  { font-size: 12px; font-weight: 600; color: var(--text2); }
+    .form-hint   { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .form-row    { display: flex; align-items: center; gap: 8px; }
+    .form-group input[type="number"],
+    .form-group input[type="text"],
+    .form-group input[type="password"],
+    .form-group input[type="time"] {
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 7px 10px; font-size: 13px; outline: none;
+      width: 100%;
+    }
+    .form-group input:focus { border-color: var(--accent); }
+    .form-group input[type="time"] { color-scheme: dark; width: auto; }
+    .form-group input[type="number"].w-short { width: 80px; }
+    /* toggle switch */
+    .toggle-row  { display: flex; align-items: center; gap: 10px; }
+    .toggle-label { font-size: 13px; color: var(--text2); }
+    .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; background: var(--border2); border-radius: 20px; cursor: pointer; transition: background .2s; }
+    .slider::before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .2s; }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider::before { transform: translateX(16px); }
+    /* credential list */
+    .cred-item  { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; margin-bottom: 6px; }
+    .cred-info  { flex: 1; min-width: 0; }
+    .cred-registry { font-weight: 600; color: var(--text); }
+    .cred-user  { color: var(--muted2); margin-top: 1px; }
+    .cred-empty { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .add-cred-form { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    /* exclusion list */
+    .excl-list  { display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow-y: auto; }
+    .excl-row   { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: var(--radius); }
+    .excl-row:hover { background: var(--surface2); }
+    .excl-name  { font-size: 13px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .excl-empty { color: var(--muted); font-size: 12px; }
 
     /* ── main ── */
     main { padding: 20px 22px; max-width: 1600px; margin: 0 auto; }
@@ -473,55 +461,6 @@
 </head>
 <body>
 
-<!-- drawer backdrop -->
-<div id="drawer-backdrop" onclick="closeDrawer()"></div>
-
-<!-- drawer -->
-<nav id="drawer" aria-label="Main navigation" aria-hidden="true">
-  <div class="drawer-header">
-    <a href="/" class="drawer-logo">
-      <div class="logo-icon">🐳</div>
-      Dockpatch
-    </a>
-    <button class="drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
-  </div>
-
-  <div class="drawer-section">
-    <div class="drawer-section-label">Navigation</div>
-    <a href="/" class="drawer-link active">
-      <span class="d-icon">▦</span> Dashboard
-    </a>
-  </div>
-
-  <hr class="drawer-divider">
-
-  <div class="drawer-section">
-    <div class="drawer-section-label">Settings</div>
-    <a href="/settings#automation" class="drawer-link">
-      <span class="d-icon">⏱</span> Automation
-    </a>
-    <a href="/settings#auth" class="drawer-link">
-      <span class="d-icon">🔑</span> Registry Auth
-    </a>
-    <a href="/settings#excluded" class="drawer-link">
-      <span class="d-icon">🚫</span> Excluded
-    </a>
-    <a href="/settings#display" class="drawer-link">
-      <span class="d-icon">◻</span> Display
-    </a>
-    <a href="/settings#about" class="drawer-link">
-      <span class="d-icon">ℹ</span> About
-    </a>
-  </div>
-
-  <div class="drawer-footer">
-    <span class="drawer-version">v{{ version }}</span>
-    <a href="https://github.com/claudeailab/DockPatch" target="_blank" rel="noopener" class="drawer-github" title="GitHub">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-    </a>
-  </div>
-</nav>
-
 <!-- header -->
 <header>
   <div class="header-inner">
@@ -534,9 +473,8 @@
         <div class="pill-spinner"></div>
         <span>Scanning…</span>
       </div>
-      <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()"
-              aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
-        <span></span><span></span><span></span>
+      <button class="btn-settings-trigger" onclick="openSettings()" aria-label="Settings">
+        ⚙ Settings
       </button>
     </div>
   </div>
@@ -597,6 +535,100 @@
   </div>
 </div>
 
+<!-- settings modal -->
+<div class="modal-backdrop" id="settings-modal" onclick="settingsBackdropClose(event)">
+  <div class="modal settings-modal">
+    <div class="modal-header">
+      <span class="modal-title">Settings</span>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-sections">
+
+      <!-- Automation -->
+      <div class="settings-section">
+        <div class="settings-section-title">Automation</div>
+        <div class="form-group">
+          <label class="form-label">Check interval (hours)</label>
+          <div class="form-row">
+            <input type="number" id="s-check-interval" class="w-short" min="0" max="168" placeholder="0">
+            <span class="form-hint">0 = manual only</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Auto-update interval (hours)</label>
+          <div class="form-row">
+            <input type="number" id="s-update-interval" class="w-short" min="0" max="168" placeholder="0">
+            <span class="form-hint">0 = never auto-update</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="toggle-row">
+            <label class="switch">
+              <input type="checkbox" id="s-check-on-startup">
+              <span class="slider"></span>
+            </label>
+            <span class="toggle-label">Check for updates on startup</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Maintenance window</label>
+          <div class="form-row">
+            <input type="time" id="s-window-start">
+            <span class="form-hint">to</span>
+            <input type="time" id="s-window-end">
+          </div>
+          <span class="form-hint">Auto-updates only run in this window (leave blank to allow any time)</span>
+        </div>
+      </div>
+
+      <!-- Registry Auth -->
+      <div class="settings-section">
+        <div class="settings-section-title">Registry Auth</div>
+        <div id="creds-list"></div>
+        <div class="add-cred-form">
+          <div class="form-group">
+            <label class="form-label">Registry</label>
+            <input type="text" id="cred-registry" placeholder="e.g. ghcr.io">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" id="cred-username" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password / Token</label>
+            <input type="password" id="cred-password" autocomplete="new-password">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addCredential()">+ Add credential</button>
+        </div>
+      </div>
+
+      <!-- Excluded Containers -->
+      <div class="settings-section">
+        <div class="settings-section-title">Excluded containers</div>
+        <p class="form-hint" style="margin-bottom:10px">Excluded containers are skipped during auto-updates. You can still update them manually.</p>
+        <div class="excl-list" id="excl-list"></div>
+      </div>
+
+      <!-- Display -->
+      <div class="settings-section">
+        <div class="settings-section-title">Display</div>
+        <div class="form-group">
+          <label class="form-label">Columns</label>
+          <div class="form-row">
+            <input type="number" id="s-columns" class="w-short" min="1" max="8" placeholder="auto">
+            <span class="form-hint">Leave blank for auto</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save settings</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script>
@@ -607,29 +639,135 @@ let isScanning = false;
 let pollInterval = 4000;
 let pollTimer = null;
 
-function toggleDrawer() {
-  const drawer = document.getElementById('drawer');
-  const isOpen = drawer.classList.contains('open');
-  if (isOpen) closeDrawer();
-  else {
-    drawer.classList.add('open');
-    document.getElementById('drawer-backdrop').classList.add('open');
-    const btn = document.getElementById('hamburger-btn');
-    btn.classList.add('open'); btn.setAttribute('aria-expanded','true');
-    drawer.setAttribute('aria-hidden','false');
+// ── settings modal ────────────────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settings-modal').classList.add('open');
+  loadSettings();
+  loadCredsList();
+  loadExclusions();
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+function settingsBackdropClose(e) {
+  if (e.target === document.getElementById('settings-modal')) closeSettings();
+}
+
+async function loadSettings() {
+  try {
+    const r = await fetch('/api/settings');
+    const s = await r.json();
+    document.getElementById('s-check-interval').value  = s.check_interval_hours  || '';
+    document.getElementById('s-update-interval').value = s.update_interval_hours || '';
+    document.getElementById('s-check-on-startup').checked = s.check_on_startup !== false;
+    document.getElementById('s-window-start').value = s.update_window_start || '';
+    document.getElementById('s-window-end').value   = s.update_window_end   || '';
+    const cols = localStorage.getItem(COLS_KEY);
+    document.getElementById('s-columns').value = cols && parseInt(cols) >= 1 ? parseInt(cols) : '';
+  } catch(e) { toast('Failed to load settings', 'error'); }
+}
+
+async function saveSettings() {
+  const colsVal = parseInt(document.getElementById('s-columns').value);
+  if (colsVal >= 1) { localStorage.setItem(COLS_KEY, colsVal); applyColumns(); }
+  else { localStorage.removeItem(COLS_KEY); applyResponsiveCols(); }
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        check_interval_hours:  parseInt(document.getElementById('s-check-interval').value)  || 0,
+        update_interval_hours: parseInt(document.getElementById('s-update-interval').value) || 0,
+        check_on_startup:      document.getElementById('s-check-on-startup').checked,
+        update_window_start:   document.getElementById('s-window-start').value,
+        update_window_end:     document.getElementById('s-window-end').value,
+      })
+    });
+    const d = await r.json();
+    if (d.ok) { toast('Settings saved', 'success'); closeSettings(); }
+    else toast('Failed to save settings', 'error');
+  } catch(e) { toast('Failed to save settings', 'error'); }
+}
+
+async function loadCredsList() {
+  const el = document.getElementById('creds-list');
+  try {
+    const r = await fetch('/api/credentials');
+    const d = await r.json();
+    const regs = Object.entries(d.registries || {});
+    if (!regs.length) {
+      el.innerHTML = '<p class="cred-empty">No credentials saved.</p>';
+      return;
+    }
+    el.innerHTML = regs.map(([reg, info]) => `
+      <div class="cred-item">
+        <div class="cred-info">
+          <div class="cred-registry">${escHtml(reg)}</div>
+          <div class="cred-user">${escHtml(info.username)}</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="removeCredential('${escAttr(reg)}')">Remove</button>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<p class="cred-empty">Failed to load.</p>'; }
+}
+
+async function addCredential() {
+  const registry = document.getElementById('cred-registry').value.trim();
+  const username = document.getElementById('cred-username').value.trim();
+  const password = document.getElementById('cred-password').value;
+  if (!registry || !username || !password) { toast('All fields required', 'error'); return; }
+  try {
+    const r = await fetch('/api/credentials', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ registry, username, password })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('cred-registry').value = '';
+      document.getElementById('cred-username').value = '';
+      document.getElementById('cred-password').value = '';
+      toast('Credential saved', 'success');
+      loadCredsList();
+    } else toast(d.error || 'Failed to save', 'error');
+  } catch(e) { toast('Failed to save credential', 'error'); }
+}
+
+async function removeCredential(registry) {
+  try {
+    await fetch(`/api/credentials/${encodeURIComponent(registry)}`, { method: 'DELETE' });
+    toast('Credential removed', 'info');
+    loadCredsList();
+  } catch(e) { toast('Failed to remove credential', 'error'); }
+}
+
+function loadExclusions() {
+  const el = document.getElementById('excl-list');
+  if (!containers.length) {
+    el.innerHTML = '<p class="excl-empty">No containers found.</p>';
+    return;
   }
-}
-function closeDrawer() {
-  document.getElementById('drawer').classList.remove('open');
-  document.getElementById('drawer-backdrop').classList.remove('open');
-  const btn = document.getElementById('hamburger-btn');
-  btn.classList.remove('open'); btn.setAttribute('aria-expanded','false');
-  document.getElementById('drawer').setAttribute('aria-hidden','true');
+  const sorted = [...containers].sort((a, b) => a.name.localeCompare(b.name));
+  el.innerHTML = sorted.map(c => `
+    <div class="excl-row">
+      <span class="excl-name">${escHtml(c.name)}</span>
+      <label class="switch" title="${c.is_excluded ? 'Click to unexclude' : 'Click to exclude'}">
+        <input type="checkbox" ${c.is_excluded ? 'checked' : ''} onchange="toggleExclude('${escAttr(c.name)}', this.checked)">
+        <span class="slider"></span>
+      </label>
+    </div>`).join('');
 }
 
-function checkAuthDot() {}
-function checkExcludedDot() {}
+async function toggleExclude(name, exclude) {
+  const method = exclude ? 'POST' : 'DELETE';
+  try {
+    await fetch(`/api/excluded/${encodeURIComponent(name)}`, { method });
+    toast(exclude ? `${name} excluded` : `${name} unexcluded`, 'info');
+    await poll();
+    loadExclusions();
+  } catch(e) { toast('Failed to update exclusion', 'error'); }
+}
 
+// ── poll & stats ──────────────────────────────────────────────────────────────
 function schedulePoll() {
   if (pollTimer) clearTimeout(pollTimer);
   pollTimer = setTimeout(async () => { await poll(); schedulePoll(); }, pollInterval);
@@ -805,25 +943,8 @@ async function doUpdateAll() { closeConfirm(); document.getElementById('update-a
 async function checkOne(btn,name) { btn.disabled=true; await fetch(`/api/check/${encodeURIComponent(name)}`,{method:'POST'}); poll(); }
 async function updateOne(btn,name) { btn.disabled=true; await fetch(`/api/update/${encodeURIComponent(name)}`,{method:'POST'}); poll(); }
 
-async function toggleExclude(btn, name, currentlyExcluded) {
-  btn.disabled = true;
-  const method = currentlyExcluded ? 'DELETE' : 'POST';
-  try {
-    await fetch(`/api/excluded/${encodeURIComponent(name)}`, { method });
-    toast(currentlyExcluded ? `${name} removed from exclusion list` : `${name} excluded from updates`, 'info');
-    checkExcludedDot();
-    await poll();
-  } catch(e) {
-    toast('Failed to update exclusion', 'error');
-    btn.disabled = false;
-  }
-}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeConfirm(); closeSettings(); } });
 
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeConfirm(); closeDrawer(); } });
-
-applyColumns();
-checkAuthDot();
-checkExcludedDot();
 poll();
 schedulePoll();
 </script>

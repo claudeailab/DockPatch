@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-VERSION = "0.6.1"
+VERSION = "0.6.2"
 
 client     = docker.from_env()
 api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
