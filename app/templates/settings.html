@@ -49,9 +49,13 @@
       -webkit-backdrop-filter: blur(20px) saturate(1.4);
       border-bottom: 1px solid var(--border);
       padding: 0 20px; height: 54px;
-      display: flex; align-items: center; justify-content: space-between;
       position: sticky; top: 0; z-index: 100; flex-shrink: 0;
     }
+    .header-inner {
+      max-width: 1600px; margin: 0 auto; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo-version { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 2px; }
     .logo {
       font-size: 15px; font-weight: 700;
       display: flex; align-items: center; gap: 9px;
@@ -336,8 +340,8 @@
   <div class="drawer-section">
     <div class="drawer-section-label">Settings</div>
     <button class="drawer-link active" data-panel="automation" onclick="drawerSwitchPanel(this)"><span class="d-icon">⏱</span> Automation</button>
-    <button class="drawer-link" data-panel="auth" onclick="drawerSwitchPanel(this)"><span class="d-icon">🔑</span> Registry Auth<span class="d-dot" id="drawer-auth-dot" style="display:none"></span></button>
-    <button class="drawer-link" data-panel="excluded" onclick="drawerSwitchPanel(this)"><span class="d-icon">🚫</span> Excluded<span class="d-dot" id="drawer-excluded-dot" style="display:none"></span></button>
+    <button class="drawer-link" data-panel="auth" onclick="drawerSwitchPanel(this)"><span class="d-icon">🔑</span> Registry Auth</button>
+    <button class="drawer-link" data-panel="excluded" onclick="drawerSwitchPanel(this)"><span class="d-icon">🚫</span> Excluded</button>
     <button class="drawer-link" data-panel="display" onclick="drawerSwitchPanel(this)"><span class="d-icon">◻</span> Display</button>
     <button class="drawer-link" data-panel="about" onclick="drawerSwitchPanel(this)"><span class="d-icon">ℹ</span> About</button>
   </div>
@@ -351,20 +355,24 @@
 
 <!-- header -->
 <header>
-  <a href="/" class="logo"><div class="logo-icon">🐳</div> Dockpatch</a>
-  <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
-    <span></span><span></span><span></span>
-  </button>
+  <div class="header-inner">
+    <a href="/" class="logo"><div class="logo-icon">🐳</div> Dockpatch <span class="logo-version">v{{ version }}</span></a>
+    <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
 </header>
 
 <div class="settings-layout">
 
   <!-- sidebar -->
   <aside class="settings-sidebar">
+    <a href="/" class="sidebar-link" style="margin-bottom:4px"><span class="icon">←</span> Dashboard</a>
+    <hr class="sidebar-divider">
     <div class="sidebar-heading">Settings</div>
     <button class="sidebar-link active" data-panel="automation" onclick="switchPanel(this)"><span class="icon">⏱</span> Automation</button>
-    <button class="sidebar-link" data-panel="auth" onclick="switchPanel(this)"><span class="icon">🔑</span> Registry Auth<span class="badge-dot" id="auth-dot" style="display:none"></span></button>
-    <button class="sidebar-link" data-panel="excluded" onclick="switchPanel(this)"><span class="icon">🚫</span> Excluded<span class="badge-dot" id="excluded-dot" style="display:none"></span></button>
+    <button class="sidebar-link" data-panel="auth" onclick="switchPanel(this)"><span class="icon">🔑</span> Registry Auth</button>
+    <button class="sidebar-link" data-panel="excluded" onclick="switchPanel(this)"><span class="icon">🚫</span> Excluded</button>
     <button class="sidebar-link" data-panel="display" onclick="switchPanel(this)"><span class="icon">◻</span> Display</button>
     <hr class="sidebar-divider">
     <button class="sidebar-link" data-panel="about" onclick="switchPanel(this)"><span class="icon">ℹ</span> About</button>
@@ -666,8 +674,6 @@ async function loadCredsList() {
     const r = await fetch('/api/credentials'), d = await r.json();
     const entries = Object.entries(d.registries||{});
     const has = entries.length>0;
-    document.getElementById('auth-dot').style.display        = has?'block':'none';
-    document.getElementById('drawer-auth-dot').style.display = has?'block':'none';
     if (!entries.length) { list.innerHTML='<div class="cred-empty">No registries configured yet.</div>'; return; }
     list.innerHTML = entries.map(([reg,info])=>`
       <div class="cred-item">
@@ -712,8 +718,6 @@ async function loadExclList() {
     const r = await fetch('/api/excluded'), d = await r.json();
     const names = d.excluded || [];
     const has = names.length > 0;
-    document.getElementById('excluded-dot').style.display        = has ? 'block' : 'none';
-    document.getElementById('drawer-excluded-dot').style.display = has ? 'block' : 'none';
     if (!names.length) { list.innerHTML = '<div class="excl-empty">No containers excluded yet.</div>'; return; }
     list.innerHTML = names.map(name => `
       <div class="excl-item">

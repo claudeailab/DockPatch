@@ -48,13 +48,20 @@
       border-bottom: 1px solid var(--border);
       padding: 0 20px;
       height: 54px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
       position: sticky;
       top: 0;
       z-index: 100;
     }
+    .header-inner {
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo-version { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 2px; }
 
     .logo {
       font-size: 15px; font-weight: 700;
@@ -338,13 +345,13 @@
     }
 
     /* coloured top strip per state */
-    .card.has-update  { border-top: 2px solid var(--yellow); }
-    .card.is-checking { border-top: 2px solid var(--accent); }
-    .card.is-updating { border-top: 2px solid var(--purple); }
-    .card.is-custom   { border-top: 2px solid #8b5cf6; }
-    .card.is-error    { border-top: 2px solid var(--red); }
-    .card.is-self     { border-top: 2px solid #4f46e5; }
-    .card.is-excluded { border-top: 2px solid var(--orange); opacity: .85; }
+    .card.has-update  { border-left: 3px solid var(--yellow); }
+    .card.is-checking { border-left: 3px solid var(--accent); }
+    .card.is-updating { border-left: 3px solid var(--purple); }
+    .card.is-custom   { border-left: 3px solid #8b5cf6; }
+    .card.is-error    { border-left: 3px solid var(--red); }
+    .card.is-self     { border-left: 3px solid #4f46e5; }
+    .card.is-excluded { border-left: 3px solid var(--orange); opacity: .85; }
 
     .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
     .card-name {
@@ -495,11 +502,9 @@
     </a>
     <a href="/settings#auth" class="drawer-link">
       <span class="d-icon">🔑</span> Registry Auth
-      <span class="d-dot" id="drawer-auth-dot" style="display:none"></span>
     </a>
     <a href="/settings#excluded" class="drawer-link">
       <span class="d-icon">🚫</span> Excluded
-      <span class="d-dot" id="drawer-excluded-dot" style="display:none"></span>
     </a>
     <a href="/settings#display" class="drawer-link">
       <span class="d-icon">◻</span> Display
@@ -519,19 +524,21 @@
 
 <!-- header -->
 <header>
-  <a href="/" class="logo">
-    <div class="logo-icon">🐳</div>
-    Dockpatch
-  </a>
-  <div class="header-right">
-    <div id="scanning-pill">
-      <div class="pill-spinner"></div>
-      <span>Scanning…</span>
+  <div class="header-inner">
+    <a href="/" class="logo">
+      <div class="logo-icon">🐳</div>
+      Dockpatch <span class="logo-version">v{{ version }}</span>
+    </a>
+    <div class="header-right">
+      <div id="scanning-pill">
+        <div class="pill-spinner"></div>
+        <span>Scanning…</span>
+      </div>
+      <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()"
+              aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+        <span></span><span></span><span></span>
+      </button>
     </div>
-    <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()"
-            aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
-      <span></span><span></span><span></span>
-    </button>
   </div>
 </header>
 
@@ -620,23 +627,8 @@ function closeDrawer() {
   document.getElementById('drawer').setAttribute('aria-hidden','true');
 }
 
-async function checkAuthDot() {
-  try {
-    const r = await fetch('/api/credentials');
-    const d = await r.json();
-    document.getElementById('drawer-auth-dot').style.display =
-      Object.keys(d.registries||{}).length ? 'block' : 'none';
-  } catch(_){}
-}
-
-async function checkExcludedDot() {
-  try {
-    const r = await fetch('/api/excluded');
-    const d = await r.json();
-    document.getElementById('drawer-excluded-dot').style.display =
-      (d.excluded||[]).length ? 'block' : 'none';
-  } catch(_){}
-}
+function checkAuthDot() {}
+function checkExcludedDot() {}
 
 function schedulePoll() {
   if (pollTimer) clearTimeout(pollTimer);
@@ -759,23 +751,12 @@ function renderGrid() {
     if (c.is_self) {
       actions = '<span class="self-lock" title="Cannot update self while running">🔒 self</span>';
     } else if (c.update_status==='custom') {
-      actions = `<button class="btn btn-exclude btn-sm" onclick="toggleExclude(this,'${escAttr(c.name)}',${c.is_excluded})" title="${c.is_excluded?'Remove from exclusion list':'Exclude from updates'}">
-        ${c.is_excluded ? '✓ Unexclude' : '🚫 Exclude'}
-      </button>`;
+      actions = '<span class="self-lock" title="Custom image — no registry to check">📦 custom</span>';
     } else {
       const busy = c.update_status==='checking'||c.update_status==='updating';
-      const excludeBtn = `<button class="btn ${c.is_excluded?'btn-unexclude':'btn-exclude'} btn-sm" onclick="toggleExclude(this,'${escAttr(c.name)}',${c.is_excluded})" title="${c.is_excluded?'Remove from exclusion list':'Exclude from updates'}">
-        ${c.is_excluded ? '✓ Unexclude' : '🚫 Exclude'}
-      </button>`;
-      if (c.is_excluded) {
-        // excluded: show only unexclude, no update buttons
-        actions = excludeBtn;
-      } else {
-        actions = `<button class="btn btn-check btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy?'disabled':''}>↻ Check</button>`;
-        if (c.update_status==='update_available')
-          actions += ` <button class="btn btn-success btn-sm" onclick="updateOne(this,'${escAttr(c.name)}')" ${busy?'disabled':''}>⬆ Update</button>`;
-        actions += ' ' + excludeBtn;
-      }
+      actions = `<button class="btn btn-check btn-sm" onclick="checkOne(this,'${escAttr(c.name)}')" ${busy?'disabled':''}>↻ Check</button>`;
+      if (c.update_status==='update_available')
+        actions += ` <button class="btn btn-success btn-sm" onclick="updateOne(this,'${escAttr(c.name)}',${c.is_excluded})" ${busy?'disabled':''}>⬆ Update</button>`;
     }
 
     let meta = '';
